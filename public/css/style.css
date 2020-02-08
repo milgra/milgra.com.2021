@@ -1,1 +1,4 @@
 /* some style */
+::-webkit-scrollbar {
+  display: none;
+}
