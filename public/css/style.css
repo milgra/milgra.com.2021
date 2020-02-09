@@ -1,4 +1,10 @@
 /* some style */
+
+body {
+    margin : 0px;
+    background-color : #FF0000;
+}
+
 ::-webkit-scrollbar {
   display: none;
 }

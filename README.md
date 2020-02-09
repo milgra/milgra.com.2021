@@ -1,28 +1,11 @@
 # {{name}}
 
-## Run
+todo :
+generic menu system
+submenu for months/apps/games/downloads from right side
 
-``` shell
-yarn install
+npm commands :
 
-yarn watch
-```
-
-## Clean
-
-``` shell
-yarn clean
-```
-
-## Release
-
-``` shell
-yarn release
-```
-
-## License
-
-Copyright © 2017 FIXME
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+npm watch
+npm clean
+npm release
