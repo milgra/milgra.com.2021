@@ -30,6 +30,27 @@
                :left "0px"
                :top  "0px"})
 
+
+(defn submenu [active]
+  (fn []
+    (if active
+      [:div {:style {:position "relative"
+                     :left 0
+                     :margin "10px"
+                     :white-space "nowrap"
+                     :background "none"
+                     :color "#BBBBBB"
+                     :font-size "1.9em"
+                     :font-weight 400
+                     :font-family "-apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif"
+                     }}
+       "Newer February January 2019 December November October September August July June May April March February January 2018 Older"]
+      [:div]
+      )
+  ))
+
+
+
 (defn menucard [ label labelch oldlabelch ]
   (let [conwidth (min (.-innerWidth js/window) 600)
         tabwidth (/ (- (/ (.-innerWidth js/window ) 2) (/ conwidth 2 )) 4)
@@ -65,13 +86,7 @@
                          (assoc :background color)
                          (assoc :transform (str "translate(" @pos-spring "px)"))
                          (assoc :width @size-spring))
-              }
-        [:input
-         {:type "button"
-          :key (str label "button")
-          :value label
-          :style btnstyle
-;;                      (assoc :transform (str "translate(" @pos-spring "px)")))
+
           :on-click (fn [e]
                       (let [newmenu (concat (filter #(not= % label) (@btn-state :labels)) [label])]
                         (println label " : " newmenu)
@@ -79,8 +94,17 @@
                         (swap! btn-state assoc :labels newmenu)
                         (swap! btn-state assoc :oldactive (@btn-state :active))
                         (swap! btn-state assoc :active label)
-                        ))}]
+                        ))
+              }
+        [:input
+         {:type "button"
+          :key (str label "button")
+          :value label
+          :style btnstyle
+;;                      (assoc :transform (str "translate(" @pos-spring "px)")))
+}]
         [:div {:style {:height "50px"}}]
+        [(submenu (= label (@btn-state :active)))]
         [:div {:style {;;:position "relative"
                        ;;:width "600px"
                        :top "50px"
@@ -97,28 +121,21 @@
       [:div       
        (map (fn [label] [(menucard label labelch oldlabelch)]) (@btn-state :labels))])))
 
-(defn submenu []
-  (fn []
-    [:div {:style {:position "absolute"
-                   :left 0
-                   :right 0
-                   :margin-left "auto"
-                   :margin-right "auto"
-                   :top "80px"
-                   :width "600px"
-                   :overflow-x "auto"
-                   :white-space "nowrap"
-                   :background "#EFEFEF"
-                   }}
-     "Newer February January 2019 December November October September August July June May April March February January 2018 Older"])
-  )
-
-
 (defn page []
   (fn []
   [:div
+    [:div {:style {:position "absolute"
+                   :margin "10px"
+                   :top "0px"
+                   :right "0px"
+                   :color "#FFFFFF"
+                   :background "none"
+                   :font-size "1.9em"
+                   :font-weight 400
+                   :font-family "-apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif"
+                   }} "milgra.com"]
    [menu]
-   [submenu]
+   ;;[submenu]
    ]))
 
 
