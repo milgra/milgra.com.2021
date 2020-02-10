@@ -3,6 +3,7 @@
  ["src"]
 
  :dependencies [[binaryage/devtools "0.9.7"]
+                [cljs-http "0.1.45"]
                 [reagent "0.8.0-alpha2"]
                 [reanimated "0.6.1"]]
 

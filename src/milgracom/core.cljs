@@ -1,20 +1,24 @@
 (ns milgracom.core
   (:require [reagent.core :as reagent :refer [atom]]
             [reanimated.core :as anim]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.core.async :as async]
+            [cljs-http.client :as http]))
 
 (defonce app-state (atom {:text "Hello world!"}))
 (defonce btn-state (atom {:fixlabels ["games" "apps" "downloads" "donate" "blog"]
-                          :colors ["#FFDDBB" "#FFBB99" "#FF9966" "#FF6633" "#FF3300"]
+                          :colors ["#BBDDFF" "#99BBFF" "#6699FF" "#3366FF" "#0033FF"]
                           :labels ["games" "apps" "downloads" "donate" "blog"]
                           :oldlabels ["games" "apps" "downloads" "donate" "blog"]
                           :active "blog"
-                          :oldactive "blog"}))
+                          :oldactive "blog"
+                          :posts "Here will be posts"}))
 
 
 (def btnstyle {:color "#FFFFFF"
                :background "none"
                :padding 10
+               :width "100%"
                :font-size "1.9em"
                :font-weight 400
                :font-family "-apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif"
@@ -34,7 +38,7 @@
 (defn submenu [active]
   (fn []
     (if active
-      [:div {:style {:position "relative"
+      [:div {:style {:position "absolute"
                      :left 0
                      :margin "10px"
                      :white-space "nowrap"
@@ -49,11 +53,15 @@
       )
   ))
 
+(defn get-posts []
+  (async/go
+    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000"))]
+      (swap! btn-state assoc :posts body))))
 
 
 (defn menucard [ label labelch oldlabelch ]
-  (let [conwidth (min (.-innerWidth js/window) 600)
-        tabwidth (/ (- (/ (.-innerWidth js/window ) 2) (/ conwidth 2 )) 4)
+  (let [
+        tabwidth (/ 300 4)
         colindex (.indexOf (@btn-state :fixlabels) label)
         color (nth (@btn-state :colors) colindex)
         btnindex (.indexOf (@btn-state :labels) label)
@@ -74,7 +82,7 @@
         newsize (if (= label (@btn-state :active))
                              600
                              tabwidth)
-        size-spring (anim/spring size {:mass 10.0 :stiffness 0.5 :damping 2.0})
+        size-spring (anim/spring size {:mass 5.0 :stiffness 0.5 :damping 2.0})
         ]
     (fn a-button []
       [:div
@@ -82,35 +90,33 @@
        [anim/timeout #(reset! size newsize) 100]
        [:div {
               :style (-> fltstyle
-                         ;;(assoc :z-index btnindex)
+                         ;;(assoc :z-index 10)
                          (assoc :background color)
                          (assoc :transform (str "translate(" @pos-spring "px)"))
                          (assoc :width @size-spring))
 
           :on-click (fn [e]
                       (let [newmenu (concat (filter #(not= % label) (@btn-state :labels)) [label])]
-                        (println label " : " newmenu)
+                        (get-posts)
                         (swap! btn-state assoc :oldlabels (@btn-state :labels))
                         (swap! btn-state assoc :labels newmenu)
                         (swap! btn-state assoc :oldactive (@btn-state :active))
-                        (swap! btn-state assoc :active label)
-                        ))
+                        (swap! btn-state assoc :active label)))
               }
         [:input
          {:type "button"
           :key (str label "button")
           :value label
-          :style btnstyle
-;;                      (assoc :transform (str "translate(" @pos-spring "px)")))
-}]
+          :style btnstyle ;;(assoc btnstyle :z-index 11)
+          }]
         [:div {:style {:height "50px"}}]
-        [(submenu (= label (@btn-state :active)))]
+        ;;[(submenu (= label (@btn-state :active)))]
         [:div {:style {;;:position "relative"
                        ;;:width "600px"
                        :top "50px"
                        :margin "10px"
                        :background "none"}}
-         "February January 2019 December November October September August July June May April March February January 2018"]]
+         (@btn-state :posts)]]
        ])))
 
 (defn menu []
@@ -123,20 +129,29 @@
 
 (defn page []
   (fn []
-  [:div
-    [:div {:style {:position "absolute"
-                   :margin "10px"
-                   :top "0px"
-                   :right "0px"
-                   :color "#FFFFFF"
-                   :background "none"
-                   :font-size "1.9em"
-                   :font-weight 400
-                   :font-family "-apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif"
-                   }} "milgra.com"]
-   [menu]
-   ;;[submenu]
-   ]))
+     [:div {:style {:position "absolute"
+                   :width "900px"
+                   :left 0
+                   :right 0
+                   :top 0
+                   :bottom 0
+                   :border "0px"
+                   :margin-left "auto"
+                   :margin-right "auto"
+                   :background "none"}}
+      [menu]
+      [:div {:style {:position "absolute"
+                     :margin "10px"
+                     :top "0px"
+                     :left "-175px"
+                     :color "#FFFFFF"
+                     :background "none"
+                     :font-size "1.9em"
+                     :font-weight 400
+                    :font-family "-apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif"
+                     }} "milgra.com"]]
+    ;;[submenu]
+   ))
 
 
 (defn start []
