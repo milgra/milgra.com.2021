@@ -1,0 +1,3 @@
+# peer-srv: ~/datomic-pro-0.9.5981/bin/run -m datomic.peer-server -h localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:mem://hello
+transactor: /usr/bin/env DATOMIC_EXT_CLASSPATH=$HOME/src/milgra.com/server/src XMX=-Xmx2g ~/datomic-pro-0.9.5981/bin/transactor config/dev-transactor.properties
+peer-srv: /usr/bin/env DATOMIC_EXT_CLASSPATH=$HOME/src/milgra.com/server/src XMX=-Xmx2g ~/datomic-pro-0.9.5981/bin/run -m datomic.peer-server -h 0.0.0.0 -a k,s -d tmp,datomic:mem://tmp
