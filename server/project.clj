@@ -8,6 +8,7 @@
                  [org.clojure/tools.nrepl "0.2.13"]
                  [compojure "1.6.1"]
                  [com.datomic/datomic-pro "0.9.6024"]
+                 [org.clojure/data.json "0.2.6"]
                  [ring-cors "0.1.13"]
                  [ring/ring-defaults "0.3.2"]]
   :plugins [[lein-ring "0.12.5"]]

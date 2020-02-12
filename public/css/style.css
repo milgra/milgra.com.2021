@@ -2,9 +2,41 @@
 
 body {
     margin : 0px;
+    padding : 0;
     background-color : #0000AA;
 }
 
 ::-webkit-scrollbar {
   display: none;
+}
+
+.card {
+    background : #EEEEEE;
+    padding : 0;
+    margin : 0px;
+    position : absolute;
+    width : 200px;
+    height : 100vh;
+}
+
+.cardbutton {
+    color : #FFFFFF;
+    background : none;
+    margin-top : 10px;
+    width : 100%;
+    font-size : 1.9em;
+    font-weight : 400;
+    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
+    border : none;
+}
+
+.logo {
+    position : absolute;
+    margin-top : 10px;
+    left : -170px;
+    color : #FFFFFF;
+    background : none;
+    font-size : 1.9em;
+    font-weight : 400;
+    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
 }
