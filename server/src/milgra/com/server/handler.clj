@@ -12,33 +12,52 @@
 (def uri "datomic:dev://localhost:4334/milgracom")
 
 
-(defn setup
-  "create schema and fill up with test data"
-  []
-  (if (d/create-database uri)
-    (let [conn (d/connect uri)
-          db (d/db conn)]
-      (let [resp @(d/transact conn db/blog-schema)]
-        (println "blog schema insert resp" resp))
-      (let [resp @(d/transact conn db/comment-schema)]
-        (println "comment schema insert resp" resp))
-      (let [resp @(d/transact conn db/first-posts)]
-        (println "data insert resp" resp)))))
-
-
-(defn insert-comment []
-  (let [conn (d/connect uri)
-        db (d/db conn)]
-    (let [resp @(d/transact conn db/first-comment)]
-      (println "blog schema insert resp" resp))))
-
-
 (defn get-all-posts
   "get all posts"
   []
   (let [conn (d/connect uri)
         db (d/db conn)
         posts (d/q db/all-posts-all-data-q db)]
+    posts))
+
+
+(defn setup
+  "create schema"
+  []
+  (let [succ (d/create-database uri)] 
+    (if succ 
+      (let [conn (d/connect uri)
+            db (d/db conn)]
+        (let [resp (d/transact conn db/blog-schema)]
+          (println "blog schema insert resp" resp))
+        (let [resp (d/transact conn db/comment-schema)]
+          (println "comment schema insert resp" resp))
+        (let [resp (d/transact conn db/project-schema)]
+          (println "project schema insert resp" resp)))
+      (println "db exists"))))
+
+
+(defn fillup
+  "fill up db with dev data"
+  []
+  (let [conn (d/connect uri)
+        db (d/db conn)]
+    (let [resp (d/transact conn db/first-projects)]
+      (println "project insert resp" resp))
+    (let [resp (d/transact conn db/first-posts)]
+      (println "post insert resp" resp))
+    (let [postid ((first (get-all-posts)) :e)
+          comment (assoc db/first-comment :comment/postid postid)
+          resp (d/transact conn [comment])]
+      (println "comment insert resp" resp))))
+  
+
+(defn get-all-comments
+  "get all comments"
+  []
+  (let [conn (d/connect uri)
+        db (d/db conn)
+        posts (d/q db/all-comments-all-data-q db)]
     posts))
 
 
@@ -71,37 +90,62 @@
 
 ;;(get-posts-for-month 2017 7)
 
+(defn get-comments-for-post
+  "returns comments for give post id"
+  [postid]
+  (let [conn (d/connect uri)
+        db (d/db conn)
+        comments (d/q db/comments-for-post-q db postid)]
+    comments))
 
-(defn comments-of-user-about-post
-  "Given a user Entity and a post Entity, returns the user's comments about that post as a seq of Entities."
-  [user post]
-  (let [db (d/entity-db user)]
-    (->> (d/q '[:find [?comment ...] :in $ ?user ?post :where
-                [?comment :comment/post ?post]
-                [?comment :comment/user ?user]]
-           db (:db/id user) (:db/id post))
-     (map #(d/entity db %))
-     )))
+;;(get-post-comments 17592186045419)
+
+(defn get-projects
+  "return all projects with given type"
+  [type]
+  (let [conn (d/connect uri)
+        db (d/db conn)
+        projects (d/q db/projects-for-type-q type)]
+    projects))
 
 
-(defn find-user-by-id [db userId])
-(defn find-post-by-id [db postId])
-(defn comments-of-user-about-post [user post])
-(defn cl-comment [])
+(defn add-post [pass title date content]
+  (let [data [{:blog/title title ;;"Első post"
+               :blog/date date ;; #inst "2015-12-05T00:00:00" 
+               :blog/content content ;; "<h>Ehun egy html.<br>Ehun meg egy</h>"}]
+               }]
+        conn (d/connect uri)
+        db (d/db conn)
+        resp (d/transact conn data)]
+      (println "post insert resp" resp)))
+
+(defn add-comment [pass postid date email content]
+  (let [data [{:comment/postid postid
+               :comment/content content ;; "Faszasag!!!"
+               :comment/email email ;; "milgra@milgra.com"
+               :comment/date date ;; #inst "2018-07-30T00:00:00"
+               }]
+        conn (d/connect uri)
+        db (d/db conn)
+        resp (d/transact conn data)]
+      (println "comment insert resp" resp)))
+
+(defn add-project [pass title type content]
+  (let [data [{:project/title title ;; "Termite 3D"
+               :project/type game ;; "game" 
+               :project/content content ;; "Egy kurva jo jatek"
+               }]
+        conn (d/connect uri)
+        db (d/db conn)
+        resp (d/transact conn data)]
+      (println "project insert resp" resp)))
 
 (defroutes app-routes
-  (GET "/" [] (testrequest))
-  (GET "/months" [] (json/write-str {:result (get-blog-months)}))
-  (GET "/posts" [month] (println "posts, args: " month))
-  (GET "/postos/:postId/comments-of-user/:userId"
-       [postId userId :as req]
-       (let [db (:db req)
-             ;; resources identification
-             user (find-user-by-id db userId)
-             post (find-post-by-id db postId)]
-         {:body (->> (comments-of-user-about-post user post) ;; domain logic
-                     (map cl-comment) ;; result layout
-                     )}))
+  (GET "/" [] ("BLANK"))
+  (GET "/months" [] (json/write-str {:result (get-post-months)}))
+  (GET "/posts" [month] (json/write-str {:result (get-posts-for-month month)}))
+  (GET "/comments" [postid] (json/write-str {:result (get-comments-for-post postid)}))
+  (GET "/projects" [type] (json/write-str {:result (get-projects type)}))
   (route/not-found "Not Found"))
 
 
