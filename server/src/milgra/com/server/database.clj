@@ -1,0 +1,102 @@
+(ns milgra.com.server.database)
+
+;; TEMP
+
+(def mapfromdb '[:find ?artist-name ?release-name
+                 :keys artist release
+                 :where [?release :release/name ?release-name]
+                 [?release :release/artists ?artist]
+                 [?artist :artist/name ?artist-name]])
+
+;; schemas
+
+(def blog-schema
+  [{:db/ident :blog/title
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/one
+    :db/doc "The title of the post"}
+   
+   {:db/ident :blog/date
+    :db/valueType :db.type/instant
+    :db/cardinality :db.cardinality/one
+    :db/doc "The date of the post"}
+   
+   {:db/ident :blog/content
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/one
+    :db/doc "The conent of the post in html"}])
+
+(def comment-schema
+  [{:db/ident :comment/postid
+    :db/valueType :db.type/long
+    :db/cardinality :db.cardinality/one
+    :db/doc "The id of the comment's parent post"}
+
+   {:db/ident :comment/content
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/one
+    :db/doc "The content of the comment "}
+   
+   {:db/ident :comment/email
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/one
+    :db/doc "The email of the commenter"}
+   
+   {:db/ident :comment/date
+    :db/valueType :db.type/instant
+    :db/cardinality :db.cardinality/one
+    :db/doc "The date of the comment"}])
+
+;; queries
+
+(def all-posts-q
+  '[:find ?e
+   :where [?e :blog/title]])
+
+(def all-posts-all-data-q
+  '[:find ?e ?title ?date ?content
+    :where [?e :blog/title ?title] 
+    [?e :blog/date ?date]
+    [?e :blog/content ?content]])
+
+
+(def all-post-months-q
+  '[:find ?e ?date
+    :where [?e :blog/date ?date]])
+
+
+(def posts-between-dates
+  '[:find ?e ?title ?date ?content
+    :in $ ?start ?end
+    :where
+    [?e :blog/title ?title]
+    [?e :blog/date ?date]
+    [?e :blog/content ?content]
+    [(> ?date ?start)]
+    [(< ?date ?end)]])
+
+
+;; test data
+
+(def first-posts
+  [{:blog/title "Első post"
+    :blog/date #inst "2015-12-05T00:00:00" 
+    :blog/content "<h>Ehun egy html.<br>Ehun meg egy</h>"}
+
+   {:blog/title "Második post"
+    :blog/date  #inst "2015-11-25T00:00:00"
+    :blog/content "<h>Másdoik második. Ehun egy html.<br>Ehun meg egy</h>"}
+
+   {:blog/title "Második post"
+    :blog/date  #inst "2018-04-13T00:00:00"
+    :blog/content "<h>Negyedik második. Ehun egy html.<br>Ehun meg egy</h>"}
+
+   {:blog/title "Harmadik post"
+    :blog/date  #inst "2017-07-30T00:00:00"
+    :blog/content "<h>Harmadik harmadik. Ehun egy html.<br>Ehun meg egy</h>"}])
+
+(def first-comment
+  [{:comment/postid 17592186045422
+    :comment/content "Faszasag!!!"
+    :comment/email "milgra@milgra.com"
+    :comment/date #inst "2018-07-30T00:00:00"}])
