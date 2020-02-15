@@ -1,4 +1,12 @@
-# {{name}}
+#milgra.com client and server side
+
+start server :
+
+lein ring server-headless
+
+start shadow-cljs repl and server for client side dev :
+
+shadow watch app
 
 todo :
 generic menu system
