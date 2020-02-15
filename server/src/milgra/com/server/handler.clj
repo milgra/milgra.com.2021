@@ -5,6 +5,7 @@
             [clojure.data.json :as json]
             [clj-time.format :as time]
             [datomic.api :as d]
+            [ring.util.response :as resp]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]))
 
@@ -132,7 +133,7 @@
 
 (defn add-project [pass title type content]
   (let [data [{:project/title title ;; "Termite 3D"
-               :project/type game ;; "game" 
+               :project/type type ;; "game" 
                :project/content content ;; "Egy kurva jo jatek"
                }]
         conn (d/connect uri)
@@ -141,11 +142,13 @@
       (println "project insert resp" resp)))
 
 (defroutes app-routes
-  (GET "/" [] ("BLANK"))
+  (GET "/" [] "BLANK")
+  (GET "/res" [] (resp/content-type (resp/resource-response "index.html" {:root "public"}) "text/html"))
   (GET "/months" [] (json/write-str {:result (get-post-months)}))
   (GET "/posts" [month] (json/write-str {:result (get-posts-for-month month)}))
   (GET "/comments" [postid] (json/write-str {:result (get-comments-for-post postid)}))
   (GET "/projects" [type] (json/write-str {:result (get-projects type)}))
+  (route/resources "/")
   (route/not-found "Not Found"))
 
 

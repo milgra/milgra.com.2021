@@ -1,13 +1,5 @@
 (ns milgra.com.server.database)
 
-;; TEMP
-
-(def mapfromdb '[:find ?artist-name ?release-name
-                 :keys artist release
-                 :where [?release :release/name ?release-name]
-                 [?release :release/artists ?artist]
-                 [?artist :artist/name ?artist-name]])
-
 ;; schemas
 
 (def blog-schema
