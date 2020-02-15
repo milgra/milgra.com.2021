@@ -8,10 +8,10 @@
 (defonce app-state (atom {:text "Hello world!"}))
 (defonce btn-state (atom {:fixlabels ["games" "apps" "downloads" "donate" "blog"]
                           :colors ["#FFAAAA" "#FFAAFF" "#6699FF" "#3366FF" "#0033FF"]
-                          :labels ["games" "apps" "downloads" "donate" "blog"]
-                          :oldlabels ["games" "apps" "downloads" "donate" "blog"]
-                          :active "blog"
-                          :oldactive "blog"
+                          :labels ["blog" "games" "apps" "downloads" "donate"]
+                          :oldlabels ["blog" "games" "apps" "downloads" "donate"]
+                          :active "donate"
+                          :oldactive "donate"
                           :posts "Here will be posts"}))
 
 (defn submenu [active]
@@ -65,8 +65,16 @@
         ]
     (fn a-button []
       [:div
-       [anim/timeout #(reset! pos newpos) 100]
-       [anim/timeout #(reset! size newsize) 100]
+       ;;[anim/timeout #(reset! pos newpos) 100]
+       ;;[anim/timeout #(reset! size newsize) 100]
+       [anim/timeline
+        100
+        #(reset! pos newpos)
+        150
+        #(reset! size newsize)
+        200
+        #(get-posts)
+        ]
        [:div
         {
          :class "card"
@@ -76,7 +84,6 @@
          
          :on-click (fn [e]
                      (let [newmenu (concat (filter #(not= % label) (@btn-state :labels)) [label])]
-                       (get-posts)
                        (swap! btn-state assoc :oldlabels (@btn-state :labels))
                        (swap! btn-state assoc :labels newmenu)
                        (swap! btn-state assoc :oldactive (@btn-state :active))
@@ -128,7 +135,14 @@
 
 (defn start []
   (reagent/render-component [page]
-                            (. js/document (getElementById "app"))))
+                            (. js/document (getElementById "app")))
+
+  ;; animate to blog
+  (let [newmenu (concat (filter #(not= % "blog") (@btn-state :labels)) ["blog"])]
+    (swap! btn-state assoc :oldlabels (@btn-state :labels))
+    (swap! btn-state assoc :labels newmenu)
+    (swap! btn-state assoc :oldactive (@btn-state :active))
+    (swap! btn-state assoc :active "blog")))
 
 
 (defn ^:export init []
