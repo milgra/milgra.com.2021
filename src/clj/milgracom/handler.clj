@@ -143,7 +143,6 @@
 
 (defroutes app-routes
   (GET "/" [] "BLANK")
-  (GET "/res" [] (resp/content-type (resp/resource-response "index.html" {:root "public"}) "text/html"))
   (GET "/months" [] (json/write-str {:result (get-post-months)}))
   (GET "/posts" [month] (json/write-str {:result (get-posts-for-month month)}))
   (GET "/comments" [postid] (json/write-str {:result (get-comments-for-post postid)}))
