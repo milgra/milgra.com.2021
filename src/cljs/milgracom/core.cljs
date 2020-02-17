@@ -32,10 +32,11 @@
       )
   ))
 
-(defn get-posts []
-  (async/go
-    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000"))]
-      (swap! btn-state assoc :posts body))))
+(defn get-posts [label]
+  (if (= label "blog")
+    (async/go
+      (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"))]
+        (swap! btn-state assoc :posts body)))))
 
 
 (defn menucard [ label labelch oldlabelch ]
@@ -73,7 +74,7 @@
         150
         #(reset! size newsize)
         200
-        #(get-posts)
+        #(get-posts label)
         ]
        [:div
         {
@@ -104,8 +105,8 @@
                        :top "50px"
                        :margin "10px"
                        :background "none"}}
-         (@btn-state :posts)]
-
+         (if (= label "blog")
+           (@btn-state :posts))]
         ]
        ])))
 

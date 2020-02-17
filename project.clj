@@ -16,5 +16,9 @@
   :ring {:handler milgracom.handler/app
          :nrepl {:start? true}}
   :profiles
-  {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
-                        [ring/ring-mock "0.3.2"]]}})
+  {
+   :dev {:dependencies [[javax.servlet/servlet-api "2.5"]
+                        [ring/ring-mock "0.3.2"]]}
+   :uberjar {:dependencies [[javax.servlet/servlet-api "2.5"]
+                            [ring/ring-mock "0.3.2"]]
+             :ring {:port 80}}})
