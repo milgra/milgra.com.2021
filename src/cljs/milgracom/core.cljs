@@ -3,16 +3,28 @@
             [reanimated.core :as anim]
             [clojure.string :as str]
             [clojure.core.async :as async]
+            [cljs.pprint :as print :refer [cl-format]]
             [cljs-http.client :as http]))
 
-(defonce app-state (atom {:text "Hello world!"}))
-(defonce btn-state (atom {:fixlabels ["games" "apps" "downloads" "donate" "blog"]
-                          :colors ["#FFAAAA" "#FFAAFF" "#6699FF" "#3366FF" "#0033FF"]
-                          :labels ["blog" "games" "apps" "downloads" "donate"]
-                          :oldlabels ["blog" "games" "apps" "downloads" "donate"]
-                          :active "donate"
-                          :oldactive "donate"
-                          :posts "Here will be posts"}))
+
+(defonce menu-labels ["blog" "games" "apps" "downloads" "donate"])
+(defonce menu-colors [0xc3ebff
+                      0xa0cee5
+                      0x7fb6d2
+                      0x6da9c7
+                      0x5b96b4])
+
+                      ;; 0x000035
+                      ;; 0x000042
+                      ;; 0x000053
+                      ;; 0x000068
+                      ;; 0x1c1c84])
+                     
+(defonce blog-posts (atom {:posts "Here will be posts"}))
+(defonce menu-state (atom {:newlabels ["blog" "games" "apps" "downloads" "donate"]
+                           :oldlabels ["blog" "games" "apps" "downloads" "donate"]}))
+(defonce tabwidth (/ 300 4))
+
 
 (defn submenu [active]
   (fn []
@@ -32,93 +44,88 @@
       )
   ))
 
-(defn get-posts [label]
+
+(defn get-content [label]
   (if (= label "blog")
     (async/go
       (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"))]
-        (swap! btn-state assoc :posts body)))))
+        (swap! blog-posts assoc :posts body)))))
 
 
-(defn menucard [ label labelch oldlabelch ]
-  (let [
-        tabwidth (/ 300 4)
-        colindex (.indexOf (@btn-state :fixlabels) label)
-        color (nth (@btn-state :colors) colindex)
-        btnindex (.indexOf (@btn-state :labels) label)
-        obtnindex (.indexOf (@btn-state :oldlabels) label)
-        oldindex (str/index-of oldlabelch label)
-        index (str/index-of labelch label)
-        oldpos (if (= label (@btn-state :oldactive))
-                 (* 4 tabwidth)
-                 (* obtnindex tabwidth))
-        pos (reagent/atom oldpos)
+(defn get-metrics
+  "calculates size, position and color for menucard"
+  [label]
+  (let [index (.indexOf (@menu-state :newlabels) label)
+        ;; get old and new positions
+        oldindex (.indexOf (@menu-state :oldlabels) label)
+        newindex (.indexOf (@menu-state :newlabels) label)]
+    {:oldcolor (nth menu-colors oldindex)
+     :newcolor (nth menu-colors newindex)
+     ;; get old and new positions
+     :oldpos (if (= label (last (@menu-state :oldlabels))) 300 (* oldindex tabwidth))
+     :newpos (if (= label (last (@menu-state :newlabels))) 300 (* newindex tabwidth))
+     ;; get old and new size
+     :oldsize (if (= label (last (@menu-state :oldlabels))) 600 tabwidth)
+     :newsize (if (= label (last (@menu-state :newlabels))) 600 tabwidth)}))
+
+
+(defn menucard
+  "returns a menucard component with the proper contents for given label"
+  [label]
+  (let [metrics (get-metrics label)
+        ;; component-local reagent atoms for animation
+        pos (reagent/atom (metrics :oldpos))
+        size (reagent/atom (metrics :oldsize))
+        color (reagent/atom (metrics :oldcolor))
+        ;; spring animators 
         pos-spring (anim/spring pos {:mass 10.0 :stiffness 0.5 :damping 2.0})
-        newpos (if (= label (@btn-state :active))
-                 (* 4 tabwidth)
-                 (* btnindex tabwidth))
-        size (reagent/atom (if (= label (@btn-state :oldactive))
-                             600
-                             tabwidth))
-        newsize (if (= label (@btn-state :active))
-                             600
-                             tabwidth)
         size-spring (anim/spring size {:mass 5.0 :stiffness 0.5 :damping 2.0})
-        ]
-    (fn a-button []
+        color-spring (anim/spring color {:mass 5.0 :stiffness 0.5 :damping 2.0})]
+    (fn a-menucard []
       [:div
-       ;;[anim/timeout #(reset! pos newpos) 100]
-       ;;[anim/timeout #(reset! size newsize) 100]
+       ;; animation structure
        [anim/timeline
+        0
+        #(reset! color (metrics :newcolor))
         100
-        #(reset! pos newpos)
+        #(reset! pos (metrics :newpos))
         150
-        #(reset! size newsize)
+        #(reset! size (metrics :newsize))
         200
-        #(get-posts label)
-        ]
+        #(get-content label)]
+       ;; menucard start
        [:div
-        {
-         :class "card"
-         :style {:background color
+        {:class "card"
+         :style {:background (cl-format nil "#~6,'0x" @color-spring)
                  :transform (str "translate(" @pos-spring "px)")
-                 :width @size-spring}
-         
+                 :width @size-spring}  
          :on-click (fn [e]
-                     (let [newmenu (concat (filter #(not= % label) (@btn-state :labels)) [label])]
-                       (swap! btn-state assoc :oldlabels (@btn-state :labels))
-                       (swap! btn-state assoc :labels newmenu)
-                       (swap! btn-state assoc :oldactive (@btn-state :active))
-                       (swap! btn-state assoc :active label)))
-         }
+                     (let [new-state (concat (filter #(not= % label) (@menu-state :newlabels)) [label])]
+                       (swap! menu-state assoc :oldlabels (@menu-state :newlabels))
+                       (swap! menu-state assoc :newlabels new-state)))}
+        ;; menucard button
         [:input
          {:type "button"
           :class "cardbutton"
           :key (str label "button")
           :value label
           }]
-        
+        ;; menucard submenu
         [:div {:style {:height "50px"}}]
         ;;[(submenu (= label (@btn-state :active)))]
-
+        ;; menucard content
         [:div {:style {;;:position "relative"
                        ;;:width "600px"
                        :top "50px"
                        :margin "10px"
                        :background "none"}}
          (if (= label "blog")
-           (@btn-state :posts))]
-        ]
+           (@blog-posts :posts))]]
        ])))
 
-(defn menu []
-  (println "rerender")
-  (fn []
-    (let [labelch (apply str (@btn-state :labels))
-          oldlabelch (apply str (@btn-state :oldlabels))]
-      [:div       
-       (map (fn [label] [(menucard label labelch oldlabelch)]) (@btn-state :labels))])))
 
 (defn page []
+  "returns a page component"
   (fn []
      [:div {:style {:position "absolute"
                     :width "900px"
@@ -130,20 +137,20 @@
                     :margin-left "auto"
                     :margin-right "auto"
                     :background "none"}}
-      [menu]
+      [:div       
+       (map (fn [label] [(menucard label)]) (@menu-state :newlabels))]
       [:div {:class "logo"} "milgra.com"]]))
 
 
 (defn start []
-  (reagent/render-component [page]
-                            (. js/document (getElementById "app")))
+  (reagent/render-component
+   [page]
+   (. js/document (getElementById "app")))
 
   ;; animate to blog
-  (let [newmenu (concat (filter #(not= % "blog") (@btn-state :labels)) ["blog"])]
-    (swap! btn-state assoc :oldlabels (@btn-state :labels))
-    (swap! btn-state assoc :labels newmenu)
-    (swap! btn-state assoc :oldactive (@btn-state :active))
-    (swap! btn-state assoc :active "blog")))
+  (let [new-state (concat (filter #(not= % "blog") (@menu-state :newlabels)) ["blog"])]
+    (swap! menu-state assoc :oldlabels (@menu-state :newlabels))
+    (swap! menu-state assoc :newlabels new-state)))
 
 
 (defn ^:export init []
@@ -151,6 +158,7 @@
   ;; this is called in the index.html and must be exported
   ;; so it is available even in :advanced release builds
   (start))
+
 
 (defn stop []
   ;; stop is called before any code is reloaded

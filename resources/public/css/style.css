@@ -3,7 +3,7 @@
 body {
     margin : 0px;
     padding : 0;
-    background-color : #0000AA;
+    background-color : #d7f2ff;
 }
 
 ::-webkit-scrollbar {
@@ -13,21 +13,25 @@ body {
 .card {
     background : #EEEEEE;
     padding : 0;
+    color : #FFFFFF;
     margin : 0px;
     position : absolute;
     width : 200px;
     height : 100vh;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 }
 
 .cardbutton {
     color : #FFFFFF;
     background : none;
+    padding : 0;
     margin-top : 10px;
     width : 100%;
     font-size : 1.9em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     border : none;
+    text-shadow: 1px 1px 3px #000000;    
 }
 
 .logo {
@@ -39,4 +43,5 @@ body {
     font-size : 1.9em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
+    text-shadow: 1px 1px 3px #000000;    
 }

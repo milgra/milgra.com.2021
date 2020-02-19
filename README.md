@@ -9,6 +9,8 @@ start shadow-cljs repl and server for client side dev :
 shadow watch app
 
 todo :
+months should flow in from the right one by one
+newpost/newproject layouts
 generic menu system
 submenu for months/apps/games/downloads from right side
 adott post/comment jojjon be ha parametert kap az index.html
