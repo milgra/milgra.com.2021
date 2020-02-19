@@ -36,6 +36,11 @@
           (println "project schema insert resp" resp)))
       (println "db exists"))))
 
+(defn delete []
+  (let [succ (d/delete-database uri)]
+    (println "delete" succ)
+    ))
+
 
 (defn fillup
   "fill up db with dev data"

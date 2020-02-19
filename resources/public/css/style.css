@@ -12,12 +12,13 @@ body {
 
 .card {
     background : #EEEEEE;
-    padding : 0;
+    padding : 0px;
     color : #FFFFFF;
     margin : 0px;
     position : absolute;
-    height : 100vh;
+    min-height : 100vh;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    display:inline-block;
 }
 
 .cardbutton {
@@ -66,7 +67,27 @@ body {
     font-size : 1.9em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-
     text-shadow: 1px 1px 3px #555555;   
     color : #000033;
+}
+
+.content {
+    background : "none";
+    padding : 0px;
+    color : #000000;
+    margin-left : 10px;
+    margin-right : 40px;
+    font-size : 1em;
+    font-weight : 400;
+    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
+    display:inline-block;
+}
+
+h1 {
+    padding : 0px;
+    
+    font-size : 2em;
+    font-weight : 400;
+    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
+    text-shadow: 1px 1px 3px #555555;   
 }

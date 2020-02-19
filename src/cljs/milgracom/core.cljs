@@ -1,6 +1,7 @@
 (ns milgracom.core
   (:require [reagent.core :as reagent :refer [atom]]
             [reanimated.core :as anim]
+            [markdown-to-hiccup.core :as m]
             [clojure.string :as str]
             [clojure.core.async :as async]
             [cljs.pprint :as print :refer [cl-format]]
@@ -13,13 +14,13 @@
                       0xc3ebff
                       0xa0cee5])
                      
-(defonce blog-posts (atom {:posts nil
-                           :months nil}))
+(defonce blog-posts (atom nil))
+(defonce blog-months (atom nil))
 (defonce menu-state (atom {:newlabels ["blog" "games" "apps" "files"]
                            :oldlabels ["blog" "games" "apps" "files"]}))
 (defonce tabwidth 50)
 
-(defn get-content [label]
+(defn get-months [label]
   (if (= label "blog")
     (async/go
       (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"))
@@ -28,20 +29,20 @@
                      (.parse js/JSON body)
                      :keywordize-keys true))]
         (println "months arrived")
-        (swap! blog-posts assoc :months months)))))
+        (reset! blog-months months)))))
 
 
 (defn get-posts [year month]
     (async/go
       (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
-                                                      {:query-params {:year 2018 :month 4}}))
+                                                      {:query-params {:year 2016 :month 10}}))
             posts (:result
                    (js->clj
                    (.parse js/JSON body)
                      :keywordize-keys true))
             ]
         (println "posts arrived" posts)
-        ;;(swap! blog-posts assoc :posts posts)
+        (reset! blog-posts posts)
         )))
 
 
@@ -76,7 +77,7 @@
        [anim/timeline
         (* 100 index)
         #(reset! pos 0)
-        500
+        1000
         #(get-posts 2018 4)
         ]
        ;; menucard start
@@ -96,7 +97,7 @@
   []
   (println "sidemenu")
   (fn a-sidemenu []
-    (let [months (@blog-posts :months)]
+    (let [months @blog-months]
       (if months
         [:div
          {:style{:background "none"
@@ -110,6 +111,25 @@
         ))))
 
 
+(defn content
+  []
+  (fn a-content []
+    (let [posts @blog-posts]
+      (if posts
+        [:div
+         {:class "content"}
+         ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
+         (m/component (m/md->hiccup ((first posts) :content)))
+         ;;"FASZT"
+         ;; [:br]
+         ;; (str (post :title))
+         ;; [:br]
+         ;; (str (post :date))
+         ;; [:br]
+         ;; (str (post :content))
+       ]))))
+  
+  
 (defn menucard
   "returns a menucard component with the proper contents for given label"
   [label]
@@ -124,7 +144,8 @@
         size-spring (anim/spring size {:mass 5.0 :stiffness 0.5 :damping 2.0})
         color-spring (anim/spring color {:mass 5.0 :stiffness 0.5 :damping 2.0})]
     (println "active" active)
-    (swap! blog-posts assoc :months nil)
+    (reset! blog-months nil)
+    (reset! blog-posts nil)
     (fn a-menucard []
       [:div
        ;; animation structure
@@ -136,7 +157,7 @@
         150
         #(reset! size (metrics :newsize))
         200
-        #(get-content label)]
+        #(get-months label)]
        ;; menucard start
        [:div
         {:class "card"
@@ -152,13 +173,8 @@
         ;; menucard submenu
         (if (and active (= label "blog")) [sidemenu])
         ;; menucard content
-        (if active
-          [:div {:style {;;:position "relative"
-                         ;;:width "600px"
-                         :top "50px"
-                         :margin "10px"
-                         :background "none"}}
-           ])]
+        (if (and active (= label "blog")) [content])
+        ]
        ])))
 
 
