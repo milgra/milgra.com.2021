@@ -7,72 +7,114 @@
             [cljs-http.client :as http]))
 
 
-(defonce menu-labels ["blog" "games" "apps" "downloads" "donate"])
+(defonce menu-labels ["blog" "games" "apps" "files"])
 (defonce menu-colors [0xc3ebff
                       0xa0cee5
-                      0x7fb6d2
-                      0x6da9c7
-                      0x5b96b4])
-
-                      ;; 0x000035
-                      ;; 0x000042
-                      ;; 0x000053
-                      ;; 0x000068
-                      ;; 0x1c1c84])
+                      0xc3ebff
+                      0xa0cee5])
                      
-(defonce blog-posts (atom {:posts "Here will be posts"}))
-(defonce menu-state (atom {:newlabels ["blog" "games" "apps" "downloads" "donate"]
-                           :oldlabels ["blog" "games" "apps" "downloads" "donate"]}))
-(defonce tabwidth (/ 300 4))
-
-
-(defn submenu [active]
-  (fn []
-    (if active
-      [:div {:style {:position "absolute"
-                     :left 0
-                     :margin "10px"
-                     :white-space "nowrap"
-                     :background "none"
-                     :color "#BBBBBB"
-                     :font-size "1.9em"
-                     :font-weight 400
-                     :font-family "-apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif"
-                     }}
-       "Newer February January 2019 December November October September August July June May April March February January 2018 Older"]
-      [:div]
-      )
-  ))
-
+(defonce blog-posts (atom {:posts nil
+                           :months nil}))
+(defonce menu-state (atom {:newlabels ["blog" "games" "apps" "files"]
+                           :oldlabels ["blog" "games" "apps" "files"]}))
+(defonce tabwidth 50)
 
 (defn get-content [label]
   (if (= label "blog")
     (async/go
-      (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"))]
-        (swap! blog-posts assoc :posts body)))))
+      (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"))
+            months (:result
+                    (js->clj
+                     (.parse js/JSON body)
+                     :keywordize-keys true))]
+        (println "months arrived")
+        (swap! blog-posts assoc :months months)))))
+
+
+(defn get-posts [year month]
+    (async/go
+      (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
+                                                      {:query-params {:year 2018 :month 4}}))
+            posts (:result
+                   (js->clj
+                   (.parse js/JSON body)
+                     :keywordize-keys true))
+            ]
+        (println "posts arrived" posts)
+        ;;(swap! blog-posts assoc :posts posts)
+        )))
 
 
 (defn get-metrics
   "calculates size, position and color for menucard"
   [label]
-  (let [index (.indexOf (@menu-state :newlabels) label)
+  (let [index (.indexOf menu-labels label)
         ;; get old and new positions
         oldindex (.indexOf (@menu-state :oldlabels) label)
         newindex (.indexOf (@menu-state :newlabels) label)]
-    {:oldcolor (nth menu-colors oldindex)
-     :newcolor (nth menu-colors newindex)
+    {:oldcolor (nth menu-colors index)
+     :newcolor (nth menu-colors index)
      ;; get old and new positions
-     :oldpos (if (= label (last (@menu-state :oldlabels))) 300 (* oldindex tabwidth))
-     :newpos (if (= label (last (@menu-state :newlabels))) 300 (* newindex tabwidth))
+     :oldpos (if (= label (last (@menu-state :oldlabels))) 150 (* oldindex tabwidth))
+     :newpos (if (= label (last (@menu-state :newlabels))) 150 (* newindex tabwidth))
      ;; get old and new size
-     :oldsize (if (= label (last (@menu-state :oldlabels))) 600 tabwidth)
-     :newsize (if (= label (last (@menu-state :newlabels))) 600 tabwidth)}))
+     :oldsize (if (= label (last (@menu-state :oldlabels))) 650 tabwidth)
+     :newsize (if (= label (last (@menu-state :newlabels))) 650 tabwidth)}))
+
+
+(defn sidemenubtn
+  "returns a side menu button component with the proper contents for given label"
+  [[index [year month]]]
+  (let [;; component-local reagent atoms for animation
+        pos (reagent/atom 500)
+        ;; spring animators 
+        pos-spring (anim/spring pos {:mass 10.0 :stiffness 0.5 :damping 2.0})
+        ]
+    (fn a-sidemenubtn []
+      [:div
+       ;; animation structure
+       [anim/timeline
+        (* 100 index)
+        #(reset! pos 0)
+        500
+        #(get-posts 2018 4)
+        ]
+       ;; menucard start
+       [:div
+        {:class "sidemenubtn"
+         :style {:transform (str "translate(" @pos-spring "px)")
+                 :background "linear-gradient(90deg, #a0cee5 0%,  #a0cee5 20%, #a0cee500 100%)"
+                 ;;:top (str (* index 30) "px")
+                 }}
+        (str year "-" month)]
+       [:div {:style {:height "4px"}}]
+      ]
+    )))
+
+
+(defn sidemenu
+  []
+  (println "sidemenu")
+  (fn a-sidemenu []
+    (let [months (@blog-posts :months)]
+      (if months
+        [:div
+         {:style{:background "none"
+                 :position "absolute"
+                 :top "140px"
+                 :left "590px"
+                 }}
+         [:div
+          (map (fn [label] [(sidemenubtn label)]) (map-indexed vector months))
+         ]]
+        ))))
 
 
 (defn menucard
   "returns a menucard component with the proper contents for given label"
   [label]
-  (let [metrics (get-metrics label)
+  (let [active (= label (last (@menu-state :newlabels)))
+        metrics (get-metrics label)
         ;; component-local reagent atoms for animation
         pos (reagent/atom (metrics :oldpos))
         size (reagent/atom (metrics :oldsize))
@@ -81,6 +123,8 @@
         pos-spring (anim/spring pos {:mass 10.0 :stiffness 0.5 :damping 2.0})
         size-spring (anim/spring size {:mass 5.0 :stiffness 0.5 :damping 2.0})
         color-spring (anim/spring color {:mass 5.0 :stiffness 0.5 :damping 2.0})]
+    (println "active" active)
+    (swap! blog-posts assoc :months nil)
     (fn a-menucard []
       [:div
        ;; animation structure
@@ -104,23 +148,17 @@
                        (swap! menu-state assoc :oldlabels (@menu-state :newlabels))
                        (swap! menu-state assoc :newlabels new-state)))}
         ;; menucard button
-        [:input
-         {:type "button"
-          :class "cardbutton"
-          :key (str label "button")
-          :value label
-          }]
+        [:div {:class "cardbutton"} label ]
         ;; menucard submenu
-        [:div {:style {:height "50px"}}]
-        ;;[(submenu (= label (@btn-state :active)))]
+        (if (and active (= label "blog")) [sidemenu])
         ;; menucard content
-        [:div {:style {;;:position "relative"
-                       ;;:width "600px"
-                       :top "50px"
-                       :margin "10px"
-                       :background "none"}}
-         (if (= label "blog")
-           (@blog-posts :posts))]]
+        (if active
+          [:div {:style {;;:position "relative"
+                         ;;:width "600px"
+                         :top "50px"
+                         :margin "10px"
+                         :background "none"}}
+           ])]
        ])))
 
 

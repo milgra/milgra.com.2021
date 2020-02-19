@@ -3,7 +3,6 @@
             [compojure.route :as route]
             [milgracom.database :as db]
             [clojure.data.json :as json]
-            [clj-time.format :as time]
             [datomic.api :as d]
             [ring.util.response :as resp]
             [ring.middleware.cors :refer [wrap-cors]]
@@ -87,9 +86,11 @@
         start (clojure.instant/read-instant-date (format "%d-%02d-01T00:00:00" year month))
         end (clojure.instant/read-instant-date  (format "%d-%02d-01T00:00:00" endyear endmonth))
         posts (d/q db/posts-between-dates db start end)]
-    posts))
+    (map (fn [{date :date :as val}]
+           (assoc val :date (.format (java.text.SimpleDateFormat. "MM/dd/yyyy") date)))
+           posts)))
 
-;;(get-posts-for-month 2017 7)
+;;(get-posts-for-month 2018 4)
 
 (defn get-comments-for-post
   "returns comments for give post id"
@@ -144,7 +145,7 @@
 (defroutes app-routes
   (GET "/" [] "BLANK")
   (GET "/months" [] (json/write-str {:result (get-post-months)}))
-  (GET "/posts" [month] (json/write-str {:result (get-posts-for-month month)}))
+  (GET "/posts" [year month] (json/write-str {:result (get-posts-for-month (Integer/parseInt year) (Integer/parseInt month))}))
   (GET "/comments" [postid] (json/write-str {:result (get-comments-for-post postid)}))
   (GET "/projects" [type] (json/write-str {:result (get-projects type)}))
   (route/resources "/")
