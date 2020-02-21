@@ -36,10 +36,10 @@
           (println "project schema insert resp" resp)))
       (println "db exists"))))
 
+
 (defn delete []
   (let [succ (d/delete-database uri)]
-    (println "delete" succ)
-    ))
+    (println "delete" succ)))
 
 
 (defn fillup
@@ -51,7 +51,7 @@
       (println "project insert resp" resp))
     (let [resp (d/transact conn db/first-posts)]
       (println "post insert resp" resp))
-    (let [postid ((first (get-all-posts)) :e)
+    (let [postid ((first (first (get-all-posts))) :db/id)
           comment (assoc db/first-comment :comment/postid postid)
           resp (d/transact conn [comment])]
       (println "comment insert resp" resp))))

@@ -13,11 +13,11 @@
     :db/cardinality :db.cardinality/one
     :db/doc "The date of the post"}
 
-   ;; {:db/ident :blog/tags
-   ;;  :db/valueType :db.type/instant
-   ;;  :db/cardinality :db.cardinality/multiple
-   ;;  :db/doc "The tags of the post"}
-
+   {:db/ident :blog/tags
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/many
+    :db/doc "The tags of the post"}
+ 
    {:db/ident :blog/content
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
@@ -71,11 +71,8 @@
 
 
 (def all-posts-all-data-q
-  '[:find ?e ?title ?date ?content
-    :keys e title date content
-    :where [?e :blog/title ?title] 
-    [?e :blog/date ?date]
-    [?e :blog/content ?content]])
+  '[:find (pull ?e [:db/id :blog/title :blog/date :blog/content :blog/tags])
+    :where [?e :blog/title]])
 
 
 (def all-post-months-q
@@ -130,7 +127,8 @@
 
 (def first-posts
   [{:blog/title "Első post"
-    :blog/date #inst "2016-10-07T00:00:00" 
+    :blog/date #inst "2016-10-07T00:00:00"
+    :blog/tags ["c" "programming"]
     :blog/content "#Emscripten
 *2016-10-07 17:49*
 Category: Programming
@@ -154,14 +152,17 @@ Laser trinagulation prototype, [Laserscan](laserscan)
 IMHO Emscripten is the best technology of the 2010's so far."}
 
    {:blog/title "Második post"
+    :blog/tags ["c" "drawing"]
     :blog/date  #inst "2015-11-25T00:00:00"
     :blog/content "<h>Másdoik második. Ehun egy html.<br>Ehun meg egy</h>"}
 
    {:blog/title "Második post"
+    :blog/tags ["c"]
     :blog/date  #inst "2018-04-13T00:00:00"
     :blog/content "<h>Negyedik második. Ehun egy html.<br>Ehun meg egy</h>"}
 
    {:blog/title "Harmadik post"
+    :blog/tags ["d" "prog"]
     :blog/date  #inst "2017-07-30T00:00:00"
     :blog/content "<h>Harmadik harmadik. Ehun egy html.<br>Ehun meg egy</h>"}])
 
