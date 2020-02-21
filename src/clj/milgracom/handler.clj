@@ -91,9 +91,9 @@
         start (clojure.instant/read-instant-date (format "%d-%02d-01T00:00:00" year month))
         end (clojure.instant/read-instant-date  (format "%d-%02d-01T00:00:00" endyear endmonth))
         posts (d/q db/posts-between-dates db start end)]
-    (map (fn [{date :date :as val}]
-           (assoc val :date (.format (java.text.SimpleDateFormat. "MM/dd/yyyy") date)))
-           posts)))
+    (map (fn [[{date :blog/date :as val}]]
+           (assoc val :blog/date (.format (java.text.SimpleDateFormat. "MM/dd/yyyy") date)))
+         posts)))
 
 ;;(get-posts-for-month 2018 4)
 
@@ -110,11 +110,13 @@
 (defn get-projects
   "return all projects with given type"
   [type]
+  (println "type" type)
   (let [conn (d/connect uri)
         db (d/db conn)
-        projects (d/q db/projects-for-type-q type)]
+        projects (d/q db/projects-for-type-q db type)]
     projects))
 
+(get-projects "game")
 
 (defn add-post [pass title date content]
   (let [data [{:blog/title title ;;"Első post"

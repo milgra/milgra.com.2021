@@ -81,16 +81,12 @@
 
 
 (def posts-between-dates
-  '[:find ?e ?title ?date ?content
-    :keys e title date content
+  '[:find (pull ?e [:db/id :blog/title :blog/date :blog/content :blog/tags])
     :in $ ?start ?end
     :where
-    [?e :blog/title ?title]
     [?e :blog/date ?date]
-    [?e :blog/content ?content]
     [(> ?date ?start)]
     [(< ?date ?end)]])
-
 
 (def all-comments-all-data-q
   '[:find ?e ?postid ?email ?date ?content
@@ -116,11 +112,13 @@
 (def projects-for-type-q
   '[:find ?title ?type ?content
     :keys title type content
-    :in $ ?type
+    :in $ ?wtype
     :where
-    [?type]
-    [?e :comment/title ?type]
-    [?e :comment/content ?content]])
+    [?e :project/title ?title]
+    [?e :project/type ?type]
+    [?e :project/content ?content]
+    [(= ?type ?wtype)]]
+  )
 
 
 ;; test data

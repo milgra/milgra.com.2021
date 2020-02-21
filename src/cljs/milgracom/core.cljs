@@ -8,7 +8,7 @@
             [cljs-http.client :as http]))
 
 
-(defonce menu-labels ["blog" "games" "apps" "files"])
+(defonce menu-labels ["blog" "projects" "files" "donate"])
 (defonce menu-colors [0x9dfc92
                       0x2ff01a
                       0x9dfc92
@@ -16,8 +16,9 @@
                      
 (defonce blog-posts (atom nil))
 (defonce blog-months (atom nil))
-(defonce menu-state (atom {:newlabels ["blog" "games" "apps" "files"]
-                           :oldlabels ["blog" "games" "apps" "files"]}))
+(defonce blog-projects (atom nil))
+(defonce menu-state (atom {:newlabels ["blog" "projects" "files" "donate"]
+                           :oldlabels ["blog" "projects" "files" "donate"]}))
 (defonce tabwidth 50)
 (defonce months ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"])
 (defonce selected-month (atom nil))
@@ -36,8 +37,7 @@
         )))
 
 
-(defn get-months [label]
-  (if (= label "blog")
+(defn get-months []
     (async/go
       (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"))
             months (:result
@@ -48,7 +48,20 @@
             ]
         (println "months arrived")
         (get-posts year month)
-        (reset! blog-months months)))))
+        (reset! blog-months months))))
+
+
+(defn get-projects [type]
+    (async/go
+      (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/projects"
+                                                      {:query-params {:type type}}))
+            projects (:result
+                      (js->clj
+                       (.parse js/JSON body)
+                       :keywordize-keys true))
+            ]
+        (println "projects arrived" projects)
+        (reset! blog-projects projects))))
 
 
 (defn get-metrics
@@ -127,6 +140,12 @@
         [:div
          {:class "content"}
          ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
+         ((first posts) :title)
+         [:br]
+         ((first posts) :date)
+         [:br]
+         (str ((first posts) :tags))
+         [:br]
          (m/component (m/md->hiccup ((first posts) :content)))
          ;;"FASZT"
          ;; [:br]
@@ -154,9 +173,11 @@
         size-spring (anim/spring size {:mass 5.0 :stiffness 0.5 :damping 2.0})
         color-spring (anim/spring color {:mass 5.0 :stiffness 0.5 :damping 2.0})]
     (println "active" active)
-    (reset! blog-months nil)
-    (reset! blog-posts nil)
-    (reset! selected-month nil)
+    (if (and active (= label "blog"))
+      (do
+        (reset! blog-months nil)
+        (reset! blog-posts nil)
+        (reset! selected-month nil)))
     (fn a-menucard []
       [:div
        ;; animation structure
@@ -168,7 +189,13 @@
         150
         #(reset! size (metrics :newsize))
         200
-        #(get-months label)]
+        #(cond
+           (and active (= label "blog"))
+           (get-months)
+           (and active (= label "projects"))
+           (get-projects "game")
+           )
+        ]
        ;; menucard start
        [:div
         {:class "card"

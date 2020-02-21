@@ -13,6 +13,8 @@ working month link
 add tags
 HETZNER cloud!!!
 "loading" text stylize in html on startup
+szerver nelkul hogy kezeli a site a hibakat?
+heckelest hogy allja a szerver?
 months should flow in from the right one by one
 newpost/newproject layouts
 generic menu system
