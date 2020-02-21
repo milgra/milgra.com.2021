@@ -13,10 +13,10 @@
     :db/cardinality :db.cardinality/one
     :db/doc "The date of the post"}
 
-   {:db/ident :blog/tags
-    :db/valueType :db.type/instant
-    :db/cardinality :db.cardinality/multiple
-    :db/doc "The tags of the post"}
+   ;; {:db/ident :blog/tags
+   ;;  :db/valueType :db.type/instant
+   ;;  :db/cardinality :db.cardinality/multiple
+   ;;  :db/doc "The tags of the post"}
 
    {:db/ident :blog/content
     :db/valueType :db.type/string

@@ -3,7 +3,7 @@
 body {
     margin : 0px;
     padding : 0;
-    background-color : #d7f2ff;
+    background-color : #d1ffcc;
 }
 
 ::-webkit-scrollbar {
@@ -17,16 +17,17 @@ body {
     margin : 0px;
     position : absolute;
     min-height : 100vh;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    box-shadow: 0 0px 20px 0 rgba(0, 0, 0, 0.3);
     display:inline-block;
 }
 
 .cardbutton {
+    cursor: pointer;
     background : none;
     padding : 0;
     position: absolute;
     right: 10px;
-    top: -20px;
+    top: -5px;
     display: inline-block;
     font-size : 1.9em;
     font-weight : 400;
@@ -41,27 +42,32 @@ body {
 
 
 .sidemenubtn {
-    background : #a0cee5;
-    padding-left : 20px;
-    padding-top : 5px;
-    width : 250px;
-    height : 40px;
+    cursor: pointer;
+    vertical-align: middle;
+    padding-right:8px;
+    padding-top:5px;
+    width : 142px;
+    height : 35px;
     position: relative;
-    right: 10px;
+    left: 0px;
     top: -20px;
-    font-size : 1.7em;
+    font-size : 1.2em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     border : none;
-    text-align: left;
+    text-align: right;
     text-shadow: 1px 1px 3px #555555;   
     color : #000033;
+    box-shadow: 0 0px 5px 0 rgba(0, 0, 0, 0.2);
 }
 
 .logo {
     position : absolute;
     margin-top : 0px;
     left : -170px;
+    top : -5px;
+    transform-origin: bottom right;
+    transform: rotate(-90deg);
 
     background : none;
     font-size : 1.9em;
@@ -75,7 +81,7 @@ body {
     background : "none";
     padding : 0px;
     color : #000000;
-    margin-left : 10px;
+    margin-left : 40px;
     margin-right : 40px;
     font-size : 1em;
     font-weight : 400;
@@ -90,4 +96,8 @@ h1 {
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     text-shadow: 1px 1px 3px #555555;   
+}
+
+p {
+    text-align: justify;
 }

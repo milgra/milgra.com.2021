@@ -9,33 +9,23 @@
 
 
 (defonce menu-labels ["blog" "games" "apps" "files"])
-(defonce menu-colors [0xc3ebff
-                      0xa0cee5
-                      0xc3ebff
-                      0xa0cee5])
+(defonce menu-colors [0x9dfc92
+                      0x2ff01a
+                      0x9dfc92
+                      0x2ff01a])
                      
 (defonce blog-posts (atom nil))
 (defonce blog-months (atom nil))
 (defonce menu-state (atom {:newlabels ["blog" "games" "apps" "files"]
                            :oldlabels ["blog" "games" "apps" "files"]}))
 (defonce tabwidth 50)
-
-(defn get-months [label]
-  (if (= label "blog")
-    (async/go
-      (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"))
-            months (:result
-                    (js->clj
-                     (.parse js/JSON body)
-                     :keywordize-keys true))]
-        (println "months arrived")
-        (reset! blog-months months)))))
-
+(defonce months ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"])
+(defonce selected-month (atom nil))
 
 (defn get-posts [year month]
     (async/go
       (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
-                                                      {:query-params {:year 2016 :month 10}}))
+                                                      {:query-params {:year year :month month}}))
             posts (:result
                    (js->clj
                    (.parse js/JSON body)
@@ -44,6 +34,21 @@
         (println "posts arrived" posts)
         (reset! blog-posts posts)
         )))
+
+
+(defn get-months [label]
+  (if (= label "blog")
+    (async/go
+      (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"))
+            months (:result
+                    (js->clj
+                     (.parse js/JSON body)
+                     :keywordize-keys true))
+            [year month] (if (> (count months) 0) (last months))
+            ]
+        (println "months arrived")
+        (get-posts year month)
+        (reset! blog-months months)))))
 
 
 (defn get-metrics
@@ -59,55 +64,58 @@
      :oldpos (if (= label (last (@menu-state :oldlabels))) 150 (* oldindex tabwidth))
      :newpos (if (= label (last (@menu-state :newlabels))) 150 (* newindex tabwidth))
      ;; get old and new size
-     :oldsize (if (= label (last (@menu-state :oldlabels))) 650 tabwidth)
-     :newsize (if (= label (last (@menu-state :newlabels))) 650 tabwidth)}))
+     :oldsize (if (= label (last (@menu-state :oldlabels))) 750 tabwidth)
+     :newsize (if (= label (last (@menu-state :newlabels))) 750 tabwidth)}))
 
 
 (defn sidemenubtn
   "returns a side menu button component with the proper contents for given label"
   [[index [year month]]]
-  (let [;; component-local reagent atoms for animation
-        pos (reagent/atom 500)
+  (let [ ;; component-local reagent atoms for animation
+        pos (reagent/atom 1500)
         ;; spring animators 
-        pos-spring (anim/spring pos {:mass 10.0 :stiffness 0.5 :damping 2.0})
-        ]
+        pos-spring (anim/spring pos {:mass 15.0 :stiffness 0.5 :damping 3.0})
+        newpos (if (and @selected-month (= year (@selected-month :year )) (= month (@selected-month :month))) 40 30)]
     (fn a-sidemenubtn []
       [:div
        ;; animation structure
        [anim/timeline
         (* 100 index)
-        #(reset! pos 0)
-        1000
-        #(get-posts 2018 4)
-        ]
+        #(reset! pos newpos)]
        ;; menucard start
        [:div
         {:class "sidemenubtn"
          :style {:transform (str "translate(" @pos-spring "px)")
-                 :background "linear-gradient(90deg, #a0cee5 0%,  #a0cee5 20%, #a0cee500 100%)"
-                 ;;:top (str (* index 30) "px")
-                 }}
-        (str year "-" month)]
-       [:div {:style {:height "4px"}}]
-      ]
-    )))
+                 :background (if (= (mod index 2) 0) "#9dfc92" "#2ff01a")
+                 }
+         :on-click (fn [e]
+                     (reset! pos 40)
+                     (reset! selected-month {:year year :month month})
+                     (get-posts year month))
+         }
+        (str (nth months month) " " year)]
+       [:div {:style {:height "-1px"}}]
+      ])
+    ))
 
 
 (defn sidemenu
   []
   (println "sidemenu")
   (fn a-sidemenu []
-    (let [months @blog-months]
+    (let [;;smonth @selected-month
+          months @blog-months]
       (if months
         [:div
          {:style{:background "none"
                  :position "absolute"
-                 :top "140px"
-                 :left "590px"
+                 :top "200px"
+                 :left "-180px"
                  }}
          [:div
           (map (fn [label] [(sidemenubtn label)]) (map-indexed vector months))
-         ]]
+          ]]
+        ["LOADING"]
         ))))
 
 
@@ -127,8 +135,10 @@
          ;; (str (post :date))
          ;; [:br]
          ;; (str (post :content))
-       ]))))
-  
+         ]
+        "LOADING"
+        ))))
+
   
 (defn menucard
   "returns a menucard component with the proper contents for given label"
@@ -146,6 +156,7 @@
     (println "active" active)
     (reset! blog-months nil)
     (reset! blog-posts nil)
+    (reset! selected-month nil)
     (fn a-menucard []
       [:div
        ;; animation structure
@@ -163,13 +174,13 @@
         {:class "card"
          :style {:background (cl-format nil "#~6,'0x" @color-spring)
                  :transform (str "translate(" @pos-spring "px)")
-                 :width @size-spring}  
-         :on-click (fn [e]
-                     (let [new-state (concat (filter #(not= % label) (@menu-state :newlabels)) [label])]
-                       (swap! menu-state assoc :oldlabels (@menu-state :newlabels))
-                       (swap! menu-state assoc :newlabels new-state)))}
+                 :width @size-spring}}
         ;; menucard button
-        [:div {:class "cardbutton"} label ]
+        [:div {:class "cardbutton"
+               :on-click (fn [e]
+                           (let [new-state (concat (filter #(not= % label) (@menu-state :newlabels)) [label])]
+                             (swap! menu-state assoc :oldlabels (@menu-state :newlabels))
+                             (swap! menu-state assoc :newlabels new-state)))} label ]
         ;; menucard submenu
         (if (and active (= label "blog")) [sidemenu])
         ;; menucard content

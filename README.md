@@ -9,6 +9,10 @@ start shadow-cljs repl and server for client side dev :
 shadow watch app
 
 todo :
+working month link
+add tags
+HETZNER cloud!!!
+"loading" text stylize in html on startup
 months should flow in from the right one by one
 newpost/newproject layouts
 generic menu system
