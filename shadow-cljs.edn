@@ -5,7 +5,7 @@
  :dependencies [[binaryage/devtools "0.9.7"]
                 [cljs-http "0.1.45"]
                 [clj-time "0.15.2"]
-                [reagent "0.8.0-alpha2"]
+                [reagent "0.9.1"]
                 [markdown-to-hiccup "0.6.2"]
                 [cider/cider-nrepl "0.24.0"]
                 [reanimated "0.6.1"]]

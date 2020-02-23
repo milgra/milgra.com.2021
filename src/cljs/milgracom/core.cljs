@@ -8,7 +8,7 @@
             [cljs-http.client :as http]))
 
 
-(defonce menu-labels ["blog" "projects" "files" "donate"])
+(defonce menu-labels ["blog" "apps" "games" "protos"])
 (defonce menu-colors [0x9dfc92
                       0x2ff01a
                       0x9dfc92
@@ -17,8 +17,8 @@
 (defonce blog-posts (atom nil))
 (defonce blog-months (atom nil))
 (defonce blog-projects (atom nil))
-(defonce menu-state (atom {:newlabels ["blog" "projects" "files" "donate"]
-                           :oldlabels ["blog" "projects" "files" "donate"]}))
+(defonce menu-state (atom {:newlabels ["blog" "apps" "games" "protos"]
+                           :oldlabels ["blog" "apps" "games" "protos"]}))
 (defonce tabwidth 50)
 (defonce months ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"])
 (defonce selected-month (atom nil))
@@ -81,8 +81,9 @@
      :newsize (if (= label (last (@menu-state :newlabels))) 750 tabwidth)}))
 
 
-(defn sidemenubtn
-  "returns a side menu button component with the proper contents for given label"
+
+(defn rightmenubtn
+  "returns a right menu button component with the proper contents for given label"
   [[index [year month]]]
   (let [ ;; component-local reagent atoms for animation
         pos (reagent/atom 1500)
@@ -90,14 +91,15 @@
         pos-spring (anim/spring pos {:mass 15.0 :stiffness 0.5 :damping 3.0})
         newpos (if (and @selected-month (= year (@selected-month :year )) (= month (@selected-month :month))) 40 30)]
     (fn a-sidemenubtn []
-      [:div
+      [:div {:class "a-sidemenubtn"}
        ;; animation structure
        [anim/timeline
         (* 100 index)
         #(reset! pos newpos)]
        ;; menucard start
        [:div
-        {:class "sidemenubtn"
+        {:id "sidemenubtn"
+         :class "sidemenubtn"
          :style {:transform (str "translate(" @pos-spring "px)")
                  :background (if (= (mod index 2) 0) "#9dfc92" "#2ff01a")
                  }
@@ -107,7 +109,63 @@
                      (get-posts year month))
          }
         (str (nth months month) " " year)]
-       [:div {:style {:height "-1px"}}]
+       [:div {:id "sidemenubottom"
+              :style {:height "-1px"}}]
+      ])
+    ))
+
+
+(defn rightmenu
+  []
+  (println "right")
+  (fn a-sidemenu []
+    (let [;;smonth @selected-month
+          months @blog-months]
+      (if months
+        [:div
+         {:id "sidemenu"
+          :style{:background "none"
+                 :position "absolute"
+                 :top "200px"
+                 :left "-180px"
+                 }}
+         [:div {:class "sidemenubody"}
+          (map (fn [label] [(rightmenubtn label)]) (map-indexed vector months))
+          ]]
+        "LOADING"
+        ))))
+
+
+
+(defn sidemenubtn
+  "returns a side menu button component with the proper contents for given label"
+  [[index [year month]]]
+  (let [ ;; component-local reagent atoms for animation
+        pos (reagent/atom 1500)
+        ;; spring animators 
+        pos-spring (anim/spring pos {:mass 15.0 :stiffness 0.5 :damping 3.0})
+        newpos (if (and @selected-month (= year (@selected-month :year )) (= month (@selected-month :month))) 40 30)]
+    (fn a-sidemenubtn []
+      [:div {:class "a-sidemenubtn"}
+       ;; animation structure
+       [anim/timeline
+        (* 100 index)
+        #(reset! pos newpos)]
+       ;; menucard start
+       [:div
+        {:id "sidemenubtn"
+         :class "sidemenubtn"
+         :style {:transform (str "translate(" @pos-spring "px)")
+                 :background (if (= (mod index 2) 0) "#9dfc92" "#2ff01a")
+                 }
+         :on-click (fn [e]
+                     (reset! pos 40)
+                     (reset! selected-month {:year year :month month})
+                     (get-posts year month))
+         }
+        (str (nth months month) " " year)]
+       [:div {:id "sidemenubottom"
+              :style {:height "-1px"}}]
       ])
     ))
 
@@ -120,25 +178,30 @@
           months @blog-months]
       (if months
         [:div
-         {:style{:background "none"
+         {:id "sidemenu"
+          :style{:background "none"
                  :position "absolute"
                  :top "200px"
                  :left "-180px"
                  }}
-         [:div
-          (map (fn [label] [(sidemenubtn label)]) (map-indexed vector months))
-          ]]
-        ["LOADING"]
-        ))))
+         [:div {:class "sidemenubody"}
+          (map (fn [label] ^{:key label} [(sidemenubtn label)]) (map-indexed vector months))
+          ]]))))
 
 
-(defn content
+(defn content-projects
+  [type]
+  )
+
+
+(defn content-posts
   []
   (fn a-content []
     (let [posts @blog-posts]
       (if posts
         [:div
-         {:class "content"}
+         {:id "a-content"
+          :class "content"}
          ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
          ((first posts) :title)
          [:br]
@@ -170,71 +233,86 @@
         color (reagent/atom (metrics :oldcolor))
         ;; spring animators 
         pos-spring (anim/spring pos {:mass 10.0 :stiffness 0.5 :damping 2.0})
-        size-spring (anim/spring size {:mass 5.0 :stiffness 0.5 :damping 2.0})
+        size-spring (anim/spring size {:mass 3.0 :stiffness 0.5 :damping 2.0})
         color-spring (anim/spring color {:mass 5.0 :stiffness 0.5 :damping 2.0})]
-    (println "active" active)
+    
     (if (and active (= label "blog"))
       (do
         (reset! blog-months nil)
         (reset! blog-posts nil)
         (reset! selected-month nil)))
+    
     (fn a-menucard []
-      [:div
+      (println "a-menucard")
+      
+      [:div {:key (str "menucard" label)}
        ;; animation structure
        [anim/timeline
         0
         #(reset! color (metrics :newcolor))
-        100
+        300
         #(reset! pos (metrics :newpos))
-        150
+        300
         #(reset! size (metrics :newsize))
-        200
+        300
         #(cond
            (and active (= label "blog"))
            (get-months)
            (and active (= label "projects"))
-           (get-projects "game")
-           )
-        ]
+           (get-projects "game"))]
        ;; menucard start
        [:div
-        {:class "card"
+        {:key label
+         :class "card"
          :style {:background (cl-format nil "#~6,'0x" @color-spring)
                  :transform (str "translate(" @pos-spring "px)")
                  :width @size-spring}}
         ;; menucard button
-        [:div {:class "cardbutton"
+        [:div {:key "cardbutton"
+               :class "cardbutton"
                :on-click (fn [e]
                            (let [new-state (concat (filter #(not= % label) (@menu-state :newlabels)) [label])]
                              (swap! menu-state assoc :oldlabels (@menu-state :newlabels))
-                             (swap! menu-state assoc :newlabels new-state)))} label ]
-        ;; menucard submenu
+                             (swap! menu-state assoc :newlabels new-state)))}
+         label]
+        ;;menucard submenu
         (if (and active (= label "blog")) [sidemenu])
-        ;; menucard content
-        (if (and active (= label "blog")) [content])
-        ]
-       ])))
+        ;;menucard content
+        (cond
+          (and active (= label "blog")) [content-posts]
+          (and active (= label "apps")) [content-projects "apps"]
+          (and active (= label "games")) [content-projects "games"]
+          (and active (= label "protos")) [content-projects "protos"])]])))
 
 
 (defn page []
   "returns a page component"
   (fn []
-     [:div {:style {:position "absolute"
-                    :width "900px"
-                    :left 0
-                    :right 0
-                    :top 0
-                    :bottom 0
-                    :border "0px"
-                    :margin-left "auto"
-                    :margin-right "auto"
-                    :background "none"}}
-      [:div       
-       (map (fn [label] [(menucard label)]) (@menu-state :newlabels))]
-      [:div {:class "logo"} "milgra.com"]]))
+    [:div {:key "pagecomp"
+           :style {:position "absolute"
+                   :width "900px"
+                   :left 0
+                   :right 0
+                   :top 0
+                   :bottom 0
+                   :border "0px"
+                   :margin-left "auto"
+                   :margin-right "auto"
+                   :background "none"}}
+     [:div {:id "pagecompbody"}      
+       (map (fn [label] ^{:key label} [(menucard label)]) (@menu-state :newlabels))]
+     [:div {:key "logo"
+            :class "logo"} "milgra.com"]]))
 
+(defn parse-params
+  "Parse URL parameters into a hashmap"
+  []
+  (let [param-strs (-> (.-location js/window) (clojure.string/split #"\?") last (clojure.string/split #"\&"))]
+    (into {} (for [[k v] (map #(clojure.string/split % #"=") param-strs)]
+               [(keyword k) v]))))
 
 (defn start []
+  (println "PARAMS" (parse-params))
   (reagent/render-component
    [page]
    (. js/document (getElementById "app")))

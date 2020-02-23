@@ -9,13 +9,13 @@ start shadow-cljs repl and server for client side dev :
 shadow watch app
 
 todo :
-working month link
-add tags
+
+posts es comments egyutt jojjon le, gomb csak unfoldol
+Tags jobb oldal, Admin Mode - new post, new project, edit post, delete comment , autó backup GitHub
 HETZNER cloud!!!
 "loading" text stylize in html on startup
 szerver nelkul hogy kezeli a site a hibakat?
 heckelest hogy allja a szerver?
-months should flow in from the right one by one
 newpost/newproject layouts
 generic menu system
 submenu for months/apps/games/downloads from right side
