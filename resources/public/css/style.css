@@ -41,7 +41,7 @@ body {
 }
 
 
-.sidemenubtn {
+.leftmenubtn {
     cursor: pointer;
     vertical-align: middle;
     padding-right:8px;
@@ -60,6 +60,30 @@ body {
     color : #000033;
     box-shadow: 0 0px 5px 0 rgba(0, 0, 0, 0.2);
 }
+
+
+.rightmenubtn {
+    cursor: pointer;
+    vertical-align: middle;
+    white-space: nowrap;
+    padding-left:8px;
+    padding-right:8px;
+    padding-top:8px;
+    display:inline-block;
+    height : 32px;
+    position: relative;
+    left: 0px;
+    top: -20px;
+    font-size : 1.2em;
+    font-weight : 400;
+    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
+    border : none;
+    text-align: left;
+    text-shadow: 1px 1px 3px #555555;   
+    color : #000033;
+    box-shadow: 0 0px 5px 0 rgba(0, 0, 0, 0.2);
+}
+
 
 .logo {
     position : absolute;

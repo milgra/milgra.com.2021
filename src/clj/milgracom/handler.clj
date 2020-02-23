@@ -169,12 +169,12 @@
 
 (defroutes app-routes
   (GET "/" [] "BLANK")
-  (GET "/months" [] (json/write-str {:result (get-post-months)}))
-  (GET "/posts" [year month] (json/write-str {:result (get-posts-for-month (Integer/parseInt year) (Integer/parseInt month))}))
-  (GET "/comments" [postid] (json/write-str {:result (get-comments-for-post postid)}))
-  (GET "/projects" [type] (json/write-str {:result (get-projects type)}))
-  (GET "/posttags" [] (json/write-str {:result (get-post-tags)}))
-  (GET "/projecttags" [type] (json/write-str {:result (get-project-tags type)}))
+  (GET "/months" [] (json/write-str {:months (get-post-months)
+                                     :tags (get-post-tags)}))
+  (GET "/posts" [year month] (json/write-str {:posts (get-posts-for-month (Integer/parseInt year) (Integer/parseInt month))}))
+  (GET "/comments" [postid] (json/write-str {:comments (get-comments-for-post postid)}))
+  (GET "/projects" [type] (json/write-str {:projects (get-projects type)
+                                          :tags (get-project-tags type)}))
   (route/resources "/")
   (route/not-found "Not Found"))
 
