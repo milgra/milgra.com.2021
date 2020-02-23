@@ -81,6 +81,24 @@
             dates))))))
 
 
+(defn get-post-tags
+  "get all tags in posts"
+  []
+  (let [conn (d/connect uri)
+        db (d/db conn)
+        tags (d/q db/all-post-tags-q db)]
+    (reduce (fn [res item] (into res ((first item) :blog/tags)) ) #{} tags)))
+
+
+(defn get-project-tags
+  "get all tags in posts"
+  [type]
+  (let [conn (d/connect uri)
+        db (d/db conn)
+        tags (d/q db/all-project-tags-q db type)]
+    (reduce (fn [res item] (into res ((first item) :project/tags)) ) #{} tags)))
+
+
 (defn get-posts-for-month
   "get all posts for given year and month"
   [year month]
@@ -155,6 +173,8 @@
   (GET "/posts" [year month] (json/write-str {:result (get-posts-for-month (Integer/parseInt year) (Integer/parseInt month))}))
   (GET "/comments" [postid] (json/write-str {:result (get-comments-for-post postid)}))
   (GET "/projects" [type] (json/write-str {:result (get-projects type)}))
+  (GET "/posttags" [] (json/write-str {:result (get-post-tags)}))
+  (GET "/projecttags" [type] (json/write-str {:result (get-project-tags type)}))
   (route/resources "/")
   (route/not-found "Not Found"))
 

@@ -56,6 +56,11 @@
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
     :db/doc "The content of the comment "}
+
+   {:db/ident :project/tags
+    :db/valueType :db.type/string
+    :db/cardinality :db.cardinality/many
+    :db/doc "The tags of the post"}
    
    {:db/ident :project/content
     :db/valueType :db.type/string
@@ -68,6 +73,19 @@
 (def all-posts-q
   '[:find ?e
    :where [?e :blog/title]])
+
+
+(def all-post-tags-q
+  '[:find (pull ?e [:blog/tags])
+    :where [?e :blog/tags]])
+
+
+(def all-project-tags-q
+  '[:find (pull ?e [:project/title :project/tags])
+    :in $ ?type
+    :where
+    [?e :project/type ?ptype]
+    [(= ?type ?ptype)]])
 
 
 (def all-posts-all-data-q
@@ -174,13 +192,16 @@ IMHO Emscripten is the best technology of the 2010's so far."}
 
 (def first-projects
   [{:project/title "Termite 3D"
+    :project/tags ["action" "strategy" "real-time"] 
     :project/type "game" 
     :project/content "Egy kurva jo jatek"}
 
    {:project/title "Kinetic 3D"
     :project/type  "prototype"
+    :project/tags ["3D" "OpenGL"]
     :project/content "Faszasag!!!"}
 
    {:project/title "Mac Media Key Forwarder"
+    :project/tags ["Utility"]
     :project/type  "app"
     :project/content "Faszasag!!!"}])
