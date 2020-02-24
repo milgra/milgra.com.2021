@@ -169,6 +169,11 @@
         resp (d/transact conn data)]
       (println "project insert resp" resp)))
 
+(defn get-client-ip [req]
+  (if-let [ips (get-in req [:headers "x-forwarded-for"])]
+    (-> ips (clojure.string/split #",") first)
+    (:remote-addr req)))
+
 (defroutes app-routes
   (GET "/" [] "BLANK")
   (GET "/months" [] (json/write-str {:months (get-post-months)
@@ -177,6 +182,7 @@
   (GET "/comments" [postid] (json/write-str {:comments (get-post-comments (Long/parseLong postid))}))
   (GET "/projects" [type] (json/write-str {:projects (get-projects type)
                                           :tags (get-project-tags type)}))
+  (GET "/newcomment" [postid nick text code] )
   (route/resources "/")
   (route/not-found "Not Found"))
 

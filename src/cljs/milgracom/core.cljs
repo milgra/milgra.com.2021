@@ -68,6 +68,14 @@
       (reset! comments ncomments))))
 
 
+(defn send-comment [postid nick text code]
+  (async/go
+    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/newcomment"
+                                                    {:query-params {:postid postid :nick nick :text text :code code}}))
+          result (js->clj (.parse js/JSON body) :keywordize-keys true)
+          message (result :message)])))
+ 
+
 (defn get-metrics
   "calculates size, position and color for menucard"
   [label]
@@ -197,7 +205,10 @@
 
 
 (defn comments [postid]
-  (let [comments (atom nil)
+  (let [nick (atom nil)
+        text (atom nil)
+        code (atom nil)
+        comments (atom nil)
         showcomments (atom false)
         showeditor (atom false)]
     (fn []
@@ -208,8 +219,7 @@
                :class "shwocommentbtn"
                :on-click (fn []
                            (get-comments postid comments) 
-                           (swap! showcomments not)
-                           )}
+                           (swap! showcomments not))}
          "5 comments"]
         "|"
         [:div {:style {:padding-left "20px"
@@ -220,15 +230,23 @@
         (if @showeditor
           [:div
            "nick:"
-           [:input {:style {:width "100px"}}]
+           [:input {:style {:width "100px"}
+                    :on-change #(reset! nick (-> % .-target .-value))}]
            [:br]
            "text:"
-           [:input {:style {:width "100px"}}]
+           [:input {:style {:width "100px"}
+                    :on-change #(reset! text (-> % .-target .-value))}]
            [:br]
            "how much is nine multiplied by ten (type numbers)"
-           [:input {:style {:width "100px"}}]
+           [:input {:style {:width "100px"}
+                    :on-change #(reset! code (-> % .-target .-value))}]
            [:br]
-           [:div "Send"]
+           [:div
+            {:on-click (fn [event]
+                         (send-comment postid @nick @text @code) 
+                         (swap! showeditor not)
+                         )}
+            "Send"]
            ])
        (if (and @showcomments @comments)
          (map (fn [comment]
