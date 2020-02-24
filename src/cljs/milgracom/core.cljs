@@ -189,6 +189,34 @@
           ]]))))
 
 
+(defn impressum []
+  [:div {:class "impressum"}
+   "www.milgra.com by Milan Toth | Powered by Clojure and Datomic."
+   ]
+  )
+
+(defn comments []
+  (let [showcomments (atom false)
+        showeditor (atom false)]
+    (fn []
+      [:div {:class "comments"}
+       [:div {:style {:padding-right "20px"
+                      :cursor "pointer"}
+              :class "shwocommentbtn"
+              :on-click (fn [] (swap! showcomments not))}
+        "5 comments"]
+       "|"
+       [:div {:style {:padding-left "20px"
+                      :cursor "pointer"}
+              :class "shwocommentbtn"
+              :on-click (fn [] (swap! showeditor not))}
+        " Post comment"]
+       (if @showcomments
+         [:div "COMMENTS"])
+       (if @showeditor
+         [:div "EDITOR"])
+       ])))
+
 (defn content-projects
   [type]
   (fn a-content []
@@ -233,6 +261,8 @@
          (str ((first posts) :tags))
          [:br]
          (m/component (m/md->hiccup ((first posts) :content)))
+         [:br]
+         [comments]
          ;;"FASZT"
          ;; [:br]
          ;; (str (post :title))
@@ -267,7 +297,7 @@
        [anim/timeline
         0
         #(reset! color (metrics :newcolor))
-        300
+        0
         #(reset! pos (metrics :newpos))
         300
         #(reset! size (metrics :newsize))
@@ -312,7 +342,12 @@
           (and active (= label "blog")) [content-posts]
           (and active (= label "apps")) [content-projects "apps"]
           (and active (= label "games")) [content-projects "games"]
-          (and active (= label "protos")) [content-projects "protos"])]])))
+          (and active (= label "protos")) [content-projects "protos"])
+        [:br]
+        ;;impressum
+        (if active
+          [impressum])
+        ]])))
 
 
 (defn page []
@@ -330,7 +365,7 @@
                    :margin-right "auto"
                    :background "none"}}
      [:div {:id "pagecompbody"}      
-       (map (fn [label] ^{:key label} [(pagecard label)]) (@menu-state :newlabels))]
+      (map (fn [label] ^{:key label} [(pagecard label)]) (@menu-state :newlabels))]
      [:div {:key "logo"
             :class "logo"} "milgra.com"]]))
 
