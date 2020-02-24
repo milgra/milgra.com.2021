@@ -54,10 +54,18 @@
           projects (result :projects)
           labels (map #(% :title) projects)
           tags (result :tags)]
-      (println "result" result)
       (reset! blog-projects projects)
       (reset! lmenuitems labels)
       (reset! rmenuitems tags))))
+
+
+(defn get-comments [postid comments]
+  (async/go
+    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/comments"
+                                                    {:query-params {:postid postid}}))
+          result (js->clj (.parse js/JSON body) :keywordize-keys true)
+          ncomments (result :comments)]
+      (reset! comments ncomments))))
 
 
 (defn get-metrics
@@ -187,27 +195,51 @@
    ]
   )
 
-(defn comments []
-  (let [showcomments (atom false)
+
+(defn comments [postid]
+  (let [comments (atom nil)
+        showcomments (atom false)
         showeditor (atom false)]
     (fn []
-      [:div {:class "comments"}
-       [:div {:style {:padding-right "20px"
-                      :cursor "pointer"}
+      [:div
+       [:div {:class "comments"}
+        [:div {:style {:padding-right "20px"
+                       :cursor "pointer"}
+               :class "shwocommentbtn"
+               :on-click (fn []
+                           (get-comments postid comments) 
+                           (swap! showcomments not)
+                           )}
+         "5 comments"]
+        "|"
+        [:div {:style {:padding-left "20px"
+                       :cursor "pointer"}
               :class "shwocommentbtn"
-              :on-click (fn [] (swap! showcomments not))}
-        "5 comments"]
-       "|"
-       [:div {:style {:padding-left "20px"
-                      :cursor "pointer"}
-              :class "shwocommentbtn"
-              :on-click (fn [] (swap! showeditor not))}
-        " Post comment"]
-       (if @showcomments
-         [:div "COMMENTS"])
-       (if @showeditor
-         [:div "EDITOR"])
+               :on-click (fn [] (swap! showeditor not))}
+         " Post comment"]]
+        (if @showeditor
+          [:div
+           "nick:"
+           [:input {:style {:width "100px"}}]
+           [:br]
+           "text:"
+           [:input {:style {:width "100px"}}]
+           [:br]
+           "how much is nine multiplied by ten (type numbers)"
+           [:input {:style {:width "100px"}}]
+           [:br]
+           [:div "Send"]
+           ])
+       (if (and @showcomments @comments)
+         (map (fn [comment]
+                (println "comment" comment)
+                 [:div
+                  [:h3 (comment :nick)]
+                  [:h4 (comment :date)]
+                  [:h4 (comment :content)]])
+               @comments))
        ])))
+
 
 (defn content-projects
   [type blog-projects]
@@ -221,7 +253,7 @@
                ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
                (project :title)
                [:br]
-               (projects :type)
+               (project :type)
                [:br]
                (str (project :tags))
                [:br]
@@ -236,6 +268,8 @@
     (if posts
       [:div {:id "a-content"
              :class "content"}
+       [:div {:style {:border-radius "10px"
+                      :height "100%"}}
        (map (fn [post]
               [:div ;;{:key (post :title)}
                ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
@@ -244,12 +278,12 @@
                [:h2 (str (post :tags))]
                (m/component (m/md->hiccup (post :content)))
                [:br]
-               [comments]
+               [comments (post :id)]
                [:br]
                [:hr]
                [:br]
                ])
-            posts)])))
+            posts)]])))
 
 
 (defn pagecard

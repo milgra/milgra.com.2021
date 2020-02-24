@@ -14,6 +14,7 @@ body {
 hr {
     border: 0;
     height: 1px;
+    color : #000033;
     background-color : #000033;
     box-shadow: 0 0px 5px 0 rgba(0, 0, 0, 0.2);
 }
@@ -25,7 +26,7 @@ hr {
     margin : 0px;
     padding-bottom : 10px;
     position : absolute;
-    min-height : 100vh;
+    height : 100vh;
     box-shadow: 0 0px 20px 0 rgba(0, 0, 0, 0.3);
     display:inline-block;
 }
@@ -120,8 +121,11 @@ hr {
     font-size : 1em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-    display:inline-block;
-    min-height: 95vh;
+    #display:inline-block;
+    height: 95vh;
+    #overflow: auto;
+    #3border-radius: 10px;
+    overflow-y: scroll;
 }
 
 .impressum {

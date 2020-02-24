@@ -40,10 +40,10 @@
     :db/cardinality :db.cardinality/one
     :db/doc "The content of the comment "}
    
-   {:db/ident :comment/email
+   {:db/ident :comment/nick
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
-    :db/doc "The email of the commenter"}
+    :db/doc "The nick of the commenter"}
    
    {:db/ident :comment/date
     :db/valueType :db.type/instant
@@ -112,24 +112,16 @@
     [(< ?date ?end)]])
 
 (def all-comments-all-data-q
-  '[:find ?e ?postid ?email ?date ?content
-    :keys e postid email date content
+  '[:find (pull ?e [:comment/nick :comment/date :comment/content])
     :where
-    [?e :comment/postid ?postid]
-    [?e :comment/email ?email]
-    [?e :comment/date ?date]
-    [?e :comment/content ?content]])
+    [?e :comment/postid ?postid]])
 
 
 (def comments-for-post-q
-  '[:find ?postid ?email ?date ?content
-    :keys postid email date content
+  '[:find (pull ?e [:comment/nick :comment/date :comment/content])
     :in $ ?postid
     :where
-    [?postid]
-    [?e :comment/email ?email]
-    [?e :comment/date ?date]
-    [?e :comment/content ?content]])
+    [?e :comment/postid ?postid]])
 
 
 (def projects-for-type-q
@@ -191,7 +183,7 @@ IMHO Emscripten is the best technology of the 2010's so far."}
 (def first-comment
   {:comment/postid 17592186045419
    :comment/content "Faszasag!!!"
-   :comment/email "milgra@milgra.com"
+   :comment/nick "milgra"
    :comment/date #inst "2018-07-30T00:00:00"})
 
 

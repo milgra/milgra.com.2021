@@ -55,7 +55,7 @@
           comment (assoc db/first-comment :comment/postid postid)
           resp (d/transact conn [comment])]
       (println "comment insert resp" resp))))
-  
+
 
 (defn get-all-comments
   "get all comments"
@@ -115,15 +115,17 @@
 
 ;;(get-posts-for-month 2018 4)
 
-(defn get-comments-for-post
+(defn get-post-comments
   "returns comments for give post id"
   [postid]
   (let [conn (d/connect uri)
         db (d/db conn)
         comments (d/q db/comments-for-post-q db postid)]
-    comments))
+    (map (fn [[{date :comment/date :as val}]]
+           (assoc val :comment/date (.format (java.text.SimpleDateFormat. "MM/dd/yyyy") date)))
+    comments)))
 
-;;(get-post-comments 17592186045419)
+;;(get-post-comments 17592186045425)
 
 (defn get-projects
   "return all projects with given type"
@@ -172,7 +174,7 @@
   (GET "/months" [] (json/write-str {:months (get-post-months)
                                      :tags (get-post-tags)}))
   (GET "/posts" [year month] (json/write-str {:posts (get-posts-for-month (Integer/parseInt year) (Integer/parseInt month))}))
-  (GET "/comments" [postid] (json/write-str {:comments (get-comments-for-post postid)}))
+  (GET "/comments" [postid] (json/write-str {:comments (get-post-comments (Long/parseLong postid))}))
   (GET "/projects" [type] (json/write-str {:projects (get-projects type)
                                           :tags (get-project-tags type)}))
   (route/resources "/")
