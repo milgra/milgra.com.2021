@@ -13,58 +13,51 @@
                       0x2ff01a
                       0x9dfc92
                       0x2ff01a])
-
-(defonce lmenuitems (atom nil))
-(defonce rmenuitems (atom nil))
-(defonce selecteditem (atom nil))
-(defonce selectedpage (atom nil))
-
-(defonce blog-months (atom nil))
-(defonce blog-posts (atom nil))
-(defonce blog-projects (atom nil))
-(defonce menu-state (atom {:newlabels ["blog" "apps" "games" "protos"]
-                           :oldlabels ["blog" "apps" "games" "protos"]}))
 (defonce tabwidth 50)
 (defonce monthnames ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"])
-(defonce selected-month (atom nil))
 
-(defn get-posts [year month]
-    (async/go
-      (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
-                                                      {:query-params {:year year :month month}}))
-            posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))]
-        (reset! blog-posts posts))))
+(defonce selectedpage (atom nil))
+(defonce menu-state (atom {:newlabels ["blog" "apps" "games" "protos"]
+                           :oldlabels ["blog" "apps" "games" "protos"]}))
 
-
-(defn get-months []
-    (async/go
-      (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"))
-            result (js->clj (.parse js/JSON body) :keywordize-keys true)
-            months (result :months)
-            tags (result :tags) 
-            labels (reduce
-                    (fn [res [year month]] (conj res (str (nth monthnames month) " " year)))
-                    []
-                    months)
-            [year month] (if (> (count months) 0) (last months))]
-        (reset! blog-months months)
-        (reset! lmenuitems labels)
-        (reset! rmenuitems tags)
-        (get-posts year month))))
+(defn get-posts [year month blog-posts]
+  (async/go
+    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
+                                                    {:query-params {:year year :month month}}))
+          posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))]
+      (println "posts" posts)
+      (reset! blog-posts posts))))
 
 
-(defn get-projects [type]
-    (async/go
-      (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/projects"
-                                                      {:query-params {:type type}}))
-            result (js->clj (.parse js/JSON body) :keywordize-keys true)
-            projects (result :projects)
-            labels (map #(% :title) projects)
-            tags (result :tags)]
-        (println "result" result)
-        (reset! blog-projects projects)
-        (reset! lmenuitems labels)
-        (reset! rmenuitems tags))))
+(defn get-months [lmenuitems rmenuitems blog-months blog-posts]
+  (async/go
+    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"))
+          result (js->clj (.parse js/JSON body) :keywordize-keys true)
+          months (result :months)
+          tags (result :tags) 
+          labels (reduce
+                  (fn [res [year month]] (conj res (str (nth monthnames month) " " year)))
+                  []
+                  months)
+          [year month] (if (> (count months) 0) (last months))]
+      (reset! blog-months months)
+      (reset! lmenuitems labels)
+      (reset! rmenuitems tags)
+      (get-posts year month blog-posts))))
+
+
+(defn get-projects [type lmenuitems rmenuitems blog-projects]
+  (async/go
+    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/projects"
+                                                    {:query-params {:type type}}))
+          result (js->clj (.parse js/JSON body) :keywordize-keys true)
+          projects (result :projects)
+          labels (map #(% :title) projects)
+          tags (result :tags)]
+      (println "result" result)
+      (reset! blog-projects projects)
+      (reset! lmenuitems labels)
+      (reset! rmenuitems tags))))
 
 
 (defn get-metrics
@@ -87,7 +80,8 @@
 (defn rightmenubtn
   "returns a side menu button component with the proper contents for given label"
   [[index label]]
-  (let [ ;; component-local reagent atoms for animation
+  (let [selecteditem (atom nil)
+        ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) 2))
         ;; spring animators 
         pos-spring (anim/spring pos {:mass 15.0 :stiffness 0.5 :damping 3.0})
@@ -106,20 +100,17 @@
                  :background (if (= (mod index 2) 0) "#9dfc92" "#2ff01a")}
          :on-click (fn [e]
                      (reset! pos 40)
+                     (reset! selecteditem label)
                      (cond
                        (= @selectedpage "blog")
-                       (let [[year month] (nth @blog-months index)] 
-                         (reset! selected-month {:year year :month month})
-                         (get-posts year month))
-                     ))
-         }
+                       (println "e")))}
         label]
        [:div {:id "rightmenubottom"
               :style {:height "-1px"}}]])))
 
 
 (defn rightmenu
-  []
+  [rmenuitems]
   (println "leftmenu")
   (fn a-leftmenu []
     (let [items @rmenuitems]
@@ -138,8 +129,9 @@
 
 (defn leftmenubtn
   "returns a side menu button component with the proper contents for given label"
-  [[index label]]
-  (let [ ;; component-local reagent atoms for animation
+  [[index label] blog-months blog-posts]
+  (let [selecteditem (atom nil)
+        ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) -2))
         ;; spring animators 
         pos-spring (anim/spring pos {:mass 15.0 :stiffness 0.5 :damping 3.0})
@@ -159,11 +151,11 @@
                  }
          :on-click (fn [e]
                      (reset! pos 40)
+                     (reset! selecteditem label)
                      (cond
                        (= @selectedpage "blog")
                        (let [[year month] (nth @blog-months index)] 
-                         (reset! selected-month {:year year :month month})
-                         (get-posts year month))
+                         (get-posts year month blog-posts))
                      ))
          }
         label]
@@ -172,7 +164,7 @@
 
 
 (defn leftmenu
-  []
+  [lmenuitems blog-months blog-posts]
   (println "leftmenu")
   (fn a-leftmenu []
     (let [items @lmenuitems]
@@ -185,7 +177,7 @@
                  :left "-180px"
                  }}
          [:div {:class "leftmenubody"}
-          (map (fn [item] ^{:key item} [(leftmenubtn item)]) (map-indexed vector items))
+          (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts)]) (map-indexed vector items))
           ]]))))
 
 
@@ -218,67 +210,59 @@
        ])))
 
 (defn content-projects
-  [type]
-  (fn a-content []
-    (let [projects @blog-projects]
-      (if projects
-        [:div
-         {:id "a-content"
-          :class "content"}
-         ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
-         ((first projects) :title)
-         [:br]
-         ((first projects) :type)
-         [:br]
-         (str ((first projects) :tags))
-         [:br]
-         (m/component (m/md->hiccup ((first projects) :content)))
-         ;;"FASZT"
-         ;; [:br]
-         ;; (str (post :title))
-         ;; [:br]
-         ;; (str (post :date))
-         ;; [:br]
-         ;; (str (post :content))
-         ]
-        ""
-        ))))
+  [type blog-projects]
+  (let [projects @blog-projects]
+    (if projects
+      [:div
+       (map (fn [project]
+              [:div
+               {:id "a-content"
+                :class "content"}
+               ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
+               (project :title)
+               [:br]
+               (projects :type)
+               [:br]
+               (str (project :tags))
+               [:br]
+               (m/component (m/md->hiccup (project :content)))
+               ])
+            projects)])))
 
 
 (defn content-posts
-  []
-  (fn a-content []
-    (let [posts @blog-posts]
-      (if posts
-        [:div
-         {:id "a-content"
-          :class "content"}
-         ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
-         ((first posts) :title)
-         [:br]
-         ((first posts) :date)
-         [:br]
-         (str ((first posts) :tags))
-         [:br]
-         (m/component (m/md->hiccup ((first posts) :content)))
-         [:br]
-         [comments]
-         ;;"FASZT"
-         ;; [:br]
-         ;; (str (post :title))
-         ;; [:br]
-         ;; (str (post :date))
-         ;; [:br]
-         ;; (str (post :content))
-         ]
-        ""
-        ))))
+  [blog-posts]
+  (let [posts @blog-posts]
+    (if posts
+      [:div {:id "a-content"
+             :class "content"}
+       (map (fn [post]
+              [:div ;;{:key (post :title)}
+               ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
+               [:h1 (post :title)]
+               [:h2 (post :date)]
+               [:h2 (str (post :tags))]
+               (m/component (m/md->hiccup (post :content)))
+               [:br]
+               [comments]
+               [:br]
+               [:hr]
+               [:br]
+               ])
+            posts)])))
 
 
 (defn pagecard
   "returns a pagecard component with the proper contents for given label"
   [label]
-  (let [active (= label (last (@menu-state :newlabels)))
+  (let [lmenuitems (atom nil)
+        rmenuitems (atom nil)
+
+        blog-months (atom nil)
+        blog-posts (atom nil)
+        blog-projects (atom nil)
+
+        active (= label (last (@menu-state :newlabels)))
         metrics (get-metrics label)
         ;; component-local reagent atoms for animation
         pos (reagent/atom (metrics :oldpos))
@@ -305,13 +289,13 @@
         #(when active
            (cond
              (= label "blog")
-             (get-months)
+             (get-months lmenuitems rmenuitems blog-months blog-posts)
              (= label "games")
-             (get-projects "game")
+             (get-projects "game" lmenuitems rmenuitems blog-projects)
              (= label "apps")
-             (get-projects "app")
+             (get-projects "app" lmenuitems rmenuitems blog-projects)
              (= label "protos")
-             (get-projects "proto")))]
+             (get-projects "proto" lmenuitems rmenuitems blog-projects)))]
        ;; pagecard start
        [:div
         {:key label
@@ -328,21 +312,20 @@
                            (reset! blog-months nil)
                            (reset! blog-posts nil)
                            (reset! blog-projects nil)
-                           (reset! selected-month nil)
                            (reset! selectedpage label)
                            (let [new-state (concat (filter #(not= % label) (@menu-state :newlabels)) [label])]
                              (swap! menu-state assoc :oldlabels (@menu-state :newlabels))
                              (swap! menu-state assoc :newlabels new-state)))}
          label]
         ;;pagecard submenu
-        (if active [leftmenu])
-        (if active [rightmenu])
+        (if active [leftmenu lmenuitems blog-months blog-posts])
+        (if active [rightmenu rmenuitems])
         ;;pagecard content
         (cond
-          (and active (= label "blog")) [content-posts]
-          (and active (= label "apps")) [content-projects "apps"]
-          (and active (= label "games")) [content-projects "games"]
-          (and active (= label "protos")) [content-projects "protos"])
+          (and active (= label "blog")) [content-posts blog-posts]
+          (and active (= label "apps")) [content-projects "apps" blog-projects]
+          (and active (= label "games")) [content-projects "games" blog-projects]
+          (and active (= label "protos")) [content-projects "protos" blog-projects])
         [:br]
         ;;impressum
         (if active

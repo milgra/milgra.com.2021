@@ -17,7 +17,12 @@
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/many
     :db/doc "The tags of the post"}
- 
+
+   {:db/ident :blog/comments
+    :db/valueType :db.type/long
+    :db/cardinality :db.cardinality/many
+    :db/doc "The tags of the post"}
+
    {:db/ident :blog/content
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
@@ -142,14 +147,11 @@
 ;; test data
 
 (def first-posts
-  [{:blog/title "Első post"
+  [{:blog/title "Emscripten"
     :blog/date #inst "2016-10-07T00:00:00"
     :blog/tags ["c" "programming"]
-    :blog/content "#Emscripten
-*2016-10-07 17:49*
-Category: Programming
-
-Tags: C, Emscripten, WebGL
+    :blog/comments 14
+    :blog/content "
 Emscripten compiles C code to javascript. Not any kind of C code, just carefully, platform-independently written C code. Not to plain javascript, but to superfast asm.js javascript. It converts OpenGL3/ES2 calls to WebGL calls, it converts BSD sockets to Websockets, it puts MEMFS/IDBFS file systems under your file I/O and you don't have to deal with anything! ( Okay, you can't use POSIX threads but if you really need them you can work it around with webworkers ).
 
 ![emscripten](images/20161007_emscripten.png)
@@ -170,16 +172,19 @@ IMHO Emscripten is the best technology of the 2010's so far."}
    {:blog/title "Második post"
     :blog/tags ["c" "drawing"]
     :blog/date  #inst "2015-11-25T00:00:00"
+    :blog/comments 0
     :blog/content "<h>Másdoik második. Ehun egy html.<br>Ehun meg egy</h>"}
 
    {:blog/title "Második post"
     :blog/tags ["c"]
     :blog/date  #inst "2018-04-13T00:00:00"
+    :blog/comments 4
     :blog/content "<h>Negyedik második. Ehun egy html.<br>Ehun meg egy</h>"}
 
    {:blog/title "Harmadik post"
     :blog/tags ["d" "prog"]
     :blog/date  #inst "2017-07-30T00:00:00"
+    :blog/comments 5
     :blog/content "<h>Harmadik harmadik. Ehun egy html.<br>Ehun meg egy</h>"}])
 
 
