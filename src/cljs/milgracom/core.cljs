@@ -25,7 +25,6 @@
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
                                                     {:query-params {:year year :month month}}))
           posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))]
-      (println "posts" posts)
       (reset! blog-posts posts))))
 
 
@@ -60,20 +59,26 @@
 
 
 (defn get-comments [postid comments]
+  (println "get-comments" postid)
   (async/go
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/comments"
                                                     {:query-params {:postid postid}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           ncomments (result :comments)]
+      (println "comments" ncomments)
       (reset! comments ncomments))))
 
 
-(defn send-comment [postid nick text code]
+(defn send-comment [postid comments nick text code]
+  (println "sendcomment" postid nick text code)
   (async/go
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/newcomment"
                                                     {:query-params {:postid postid :nick nick :text text :code code}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
-          message (result :message)])))
+          status (result :result)]
+      (get-comments postid comments)
+      (println "send: " status)
+      )))
  
 
 (defn get-metrics
@@ -193,25 +198,19 @@
                  :left "-180px"
                  }}
          [:div {:class "leftmenubody"}
-          (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts)]) (map-indexed vector items))
-          ]]))))
+          (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts)]) (map-indexed vector items))]]))))
 
 
 (defn impressum []
   [:div {:class "impressum"}
-   "www.milgra.com by Milan Toth | Powered by Clojure and Datomic."
-   ]
-  )
+   "www.milgra.com by Milan Toth | Powered by Clojure and Datomic."])
 
 
-(defn comments [postid]
+(defn comments [postid comments showcomments showeditor]
   (let [nick (atom nil)
         text (atom nil)
-        code (atom nil)
-        comments (atom nil)
-        showcomments (atom false)
-        showeditor (atom false)]
-    (fn []
+        code (atom nil)]
+    ;;(fn []
       [:div
        [:div {:class "comments"}
         [:div {:style {:padding-right "20px"
@@ -243,20 +242,19 @@
            [:br]
            [:div
             {:on-click (fn [event]
-                         (send-comment postid @nick @text @code) 
                          (swap! showeditor not)
+                         (if @showeditor (send-comment postid comments @nick @text @code)) 
                          )}
             "Send"]
            ])
        (if (and @showcomments @comments)
          (map (fn [comment]
-                (println "comment" comment)
                  [:div
                   [:h3 (comment :nick)]
                   [:h4 (comment :date)]
                   [:h4 (comment :content)]])
                @comments))
-       ])))
+       ]))
 
 
 (defn content-projects
@@ -282,27 +280,31 @@
 
 (defn content-posts
   [blog-posts]
-  (let [posts @blog-posts]
+  (let [posts @blog-posts
+        ]
     (if posts
       [:div {:id "a-content"
              :class "content"}
        [:div {:style {:border-radius "10px"
                       :height "100%"}}
-       (map (fn [post]
-              [:div ;;{:key (post :title)}
-               ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
-               [:h1 (post :title)]
-               [:h2 (post :date)]
-               [:h2 (str (post :tags))]
-               (m/component (m/md->hiccup (post :content)))
-               [:br]
-               [comments (post :id)]
-               [:br]
-               [:hr]
-               [:br]
-               ])
-            posts)]])))
-
+        (map (fn [post]
+               (let [showcomments (atom false)
+                     showeditor (atom false)
+                     comms (atom nil)]
+                 [:div {:key (rand 1000000)}
+                  ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
+                  [:h1 (post :title)]
+                  [:h2 (post :date)]
+                  [:h2 (str (post :tags))]
+                  (m/component (m/md->hiccup (post :content)))
+                  [:br]
+                  [comments (post :id) comms showcomments showeditor]
+                  [:br]
+                  [:hr]
+                  [:br]
+                  ]))
+               posts)]])))
+  
 
 (defn pagecard
   "returns a pagecard component with the proper contents for given label"

@@ -118,9 +118,11 @@
 (defn get-post-comments
   "returns comments for give post id"
   [postid]
+  (println "get-post-comments" postid)
   (let [conn (d/connect uri)
         db (d/db conn)
         comments (d/q db/comments-for-post-q db postid)]
+    (println "res" comments)
     (map (fn [[{date :comment/date :as val}]]
            (assoc val :comment/date (.format (java.text.SimpleDateFormat. "MM/dd/yyyy") date)))
     comments)))
@@ -148,16 +150,20 @@
         resp (d/transact conn data)]
       (println "post insert resp" resp)))
 
-(defn add-comment [pass postid date email content]
+(defn add-comment [postid nick content code]
+  (println "add-comment" postid nick content code)
   (let [data [{:comment/postid postid
                :comment/content content ;; "Faszasag!!!"
-               :comment/email email ;; "milgra@milgra.com"
-               :comment/date date ;; #inst "2018-07-30T00:00:00"
+               :comment/nick nick ;; "milgra@milgra.com"
+               :comment/date (new java.util.Date)
                }]
         conn (d/connect uri)
         db (d/db conn)
         resp (d/transact conn data)]
-      (println "comment insert resp" resp)))
+    (println "resp" resp)
+    "OK"))
+
+;;(add-comment 34556 "milgra" "faszt" 345)
 
 (defn add-project [pass title type content]
   (let [data [{:project/title title ;; "Termite 3D"
@@ -167,7 +173,8 @@
         conn (d/connect uri)
         db (d/db conn)
         resp (d/transact conn data)]
-      (println "project insert resp" resp)))
+    (println "project insert resp" resp)))
+
 
 (defn get-client-ip [req]
   (if-let [ips (get-in req [:headers "x-forwarded-for"])]
@@ -182,7 +189,7 @@
   (GET "/comments" [postid] (json/write-str {:comments (get-post-comments (Long/parseLong postid))}))
   (GET "/projects" [type] (json/write-str {:projects (get-projects type)
                                           :tags (get-project-tags type)}))
-  (GET "/newcomment" [postid nick text code] )
+  (GET "/newcomment" [postid nick text code] (json/write-str {:result (add-comment (Long/parseLong postid) nick text code)}))
   (route/resources "/")
   (route/not-found "Not Found"))
 

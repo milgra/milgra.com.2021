@@ -10,9 +10,8 @@ shadow watch app
 
 todo :
 
+new post/ new project oldalak
 rossz code eseten kerje ujra code-ot vagy dobjon napi kvota lejartat
-stripeok vertical gradientek legyenek, alul tunjenek el
-header css override
 Tags jobb oldal, Admin Mode - new post, new project, edit post, delete comment , autó backup GitHub
 HETZNER cloud!!!
 "loading" text stylize in html on startup
