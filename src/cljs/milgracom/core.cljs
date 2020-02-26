@@ -19,6 +19,9 @@
 (defonce selectedpage (atom nil))
 (defonce menu-state (atom {:newlabels ["blog" "apps" "games" "protos"]
                            :oldlabels ["blog" "apps" "games" "protos"]}))
+(defonce page-state (atom :normal))
+(defonce mode-admin (atom false))
+(defonce pass (atom nil))
 
 (defn get-posts [year month blog-posts]
   (async/go
@@ -59,26 +62,29 @@
 
 
 (defn get-comments [postid comments]
-  (println "get-comments" postid)
   (async/go
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/comments"
                                                     {:query-params {:postid postid}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           ncomments (result :comments)]
-      (println "comments" ncomments)
       (reset! comments ncomments))))
 
 
 (defn send-comment [postid comments nick text code]
-  (println "sendcomment" postid nick text code)
   (async/go
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/newcomment"
                                                     {:query-params {:postid postid :nick nick :text text :code code}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           status (result :result)]
       (get-comments postid comments)
-      (println "send: " status)
       )))
+
+(defn delete-comment [id]
+  (async/go
+    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/delcomment"
+                                                    {:query-params {:id id}}))
+          result (js->clj (.parse js/JSON body) :keywordize-keys true)
+          status (result :result)])))
  
 
 (defn get-metrics
@@ -132,7 +138,6 @@
 
 (defn rightmenu
   [rmenuitems]
-  (println "leftmenu")
   (fn a-leftmenu []
     (let [items @rmenuitems]
       (if items
@@ -150,7 +155,7 @@
 
 (defn leftmenubtn
   "returns a side menu button component with the proper contents for given label"
-  [[index label] blog-months blog-posts]
+  [[index label] blog-months blog-posts postpos]
   (let [selecteditem (atom nil)
         ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) -2))
@@ -185,8 +190,7 @@
 
 
 (defn leftmenu
-  [lmenuitems blog-months blog-posts]
-  (println "leftmenu")
+  [lmenuitems blog-months blog-posts postpos]
   (fn a-leftmenu []
     (let [items @lmenuitems]
       (if items
@@ -195,10 +199,9 @@
           :style{:background "none"
                  :position "absolute"
                  :top "200px"
-                 :left "-180px"
-                 }}
+                 :left "-180px"}}
          [:div {:class "leftmenubody"}
-          (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts)]) (map-indexed vector items))]]))))
+          (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts postpos)]) (map-indexed vector items))]]))))
 
 
 (defn impressum []
@@ -223,38 +226,60 @@
         "|"
         [:div {:style {:padding-left "20px"
                        :cursor "pointer"}
-              :class "shwocommentbtn"
+               :class "shwocommentbtn"
                :on-click (fn [] (swap! showeditor not))}
-         " Post comment"]]
-        (if @showeditor
+         " Post comment"]
+        (if @mode-admin
+          [:div {:style {:padding-left "20px"
+                       :cursor "pointer"}
+               :class "shwocommentbtn"
+               :on-click (fn [] (swap! showeditor not))}
+           "[Edit post]"])]
+       
+       (if @showeditor
+         [:div
           [:div
-           "nick:"
-           [:input {:style {:width "100px"}
+           [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Nick"]
+           [:input {:style {:width "150px"
+                            :display "block"
+                            :margin-left "auto"
+                            :margin-right "auto"}
                     :on-change #(reset! nick (-> % .-target .-value))}]
-           [:br]
-           "text:"
-           [:input {:style {:width "100px"}
-                    :on-change #(reset! text (-> % .-target .-value))}]
-           [:br]
-           "how much is nine multiplied by ten (type numbers)"
-           [:input {:style {:width "100px"}
+           [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Comment"]
+           [:textarea {:style {
+                               :width "100%"
+                               :height "100px"}
+                               :on-change #(reset! text (-> % .-target .-value))}]
+           [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "How much is nine multiplied by eight? Use numbers"]
+           [:input {:style {:width "150px"  
+                            :display "block"
+                            :margin-left "auto"
+                            :margin-right "auto"}
                     :on-change #(reset! code (-> % .-target .-value))}]
            [:br]
-           [:div
-            {:on-click (fn [event]
-                         (swap! showeditor not)
-                         (if @showeditor (send-comment postid comments @nick @text @code)) 
-                         )}
-            "Send"]
-           ])
+           [:div {:style {:width "100%" :text-align "center"}
+                  :on-click (fn [event]
+                               (swap! showeditor not)
+                               (if @showeditor (send-comment postid comments @nick @text @code)) 
+                               )}
+            "Send Comment"]
+           ]])
        (if (and @showcomments @comments)
          (map (fn [comment]
-                 [:div
-                  [:h3 (comment :nick)]
-                  [:h4 (comment :date)]
-                  [:h4 (comment :content)]])
-               @comments))
-       ]))
+                [:div {:key (rand 1000000)}
+                 [:h3
+                  (comment :nick)
+                  "|"
+                  (comment :date)]
+                 [:div (comment :content)]
+                 (if @mode-admin
+                   [:div {:style {:cursor "pointer"}
+                          :class "showcommentbtn"
+                          :on-click (fn [event] (delete-comment (comment :id)))} "Delete comment"])
+
+                 [:hr {:style {:width "20%" :background-color "#FFFFFF"}}]
+                 ])
+              @comments))]))
 
 
 (defn content-projects
@@ -264,7 +289,8 @@
       [:div
        (map (fn [project]
               [:div
-               {:id "a-content"
+               {:key (rand 1000000)
+                :id "a-content"
                 :class "content"}
                ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
                (project :title)
@@ -280,13 +306,12 @@
 
 (defn content-posts
   [blog-posts]
-  (let [posts @blog-posts
-        ]
-    (if posts
+  (if @blog-posts
+    (fn []
       [:div {:id "a-content"
              :class "content"}
        [:div {:style {:border-radius "10px"
-                      :height "100%"}}
+                        :height "100%"}}
         (map (fn [post]
                (let [showcomments (atom false)
                      showeditor (atom false)
@@ -295,7 +320,7 @@
                   ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
                   [:h1 (post :title)]
                   [:h2 (post :date)]
-                  [:h2 (str (post :tags))]
+                  [:h2 (clojure.string/join "," (post :tags))]
                   (m/component (m/md->hiccup (post :content)))
                   [:br]
                   [comments (post :id) comms showcomments showeditor]
@@ -303,8 +328,8 @@
                   [:hr]
                   [:br]
                   ]))
-               posts)]])))
-  
+             @blog-posts)]])))
+
 
 (defn pagecard
   "returns a pagecard component with the proper contents for given label"
@@ -326,10 +351,8 @@
         pos-spring (anim/spring pos {:mass 10.0 :stiffness 0.5 :damping 2.0})
         size-spring (anim/spring size {:mass 3.0 :stiffness 0.5 :damping 2.0})
         color-spring (anim/spring color {:mass 5.0 :stiffness 0.5 :damping 2.0})]
-    
+
     (fn a-pagecard []
-      (println "a-pagecard")
-      
       [:div {:key (str "pagecard" label)}
        ;; animation structure
        [anim/timeline
@@ -349,7 +372,8 @@
              (= label "apps")
              (get-projects "app" lmenuitems rmenuitems blog-projects)
              (= label "protos")
-             (get-projects "proto" lmenuitems rmenuitems blog-projects)))]
+             (get-projects "proto" lmenuitems rmenuitems blog-projects)))
+        ]
        ;; pagecard start
        [:div
         {:key label
@@ -382,9 +406,78 @@
           (and active (= label "protos")) [content-projects "protos" blog-projects])
         [:br]
         ;;impressum
-        (if active
+        (if (or @blog-posts @blog-projects)
           [impressum])
         ]])))
+
+
+(defn newproject []
+  [:div {:style {:position "absolute" :width "100%"}}
+   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
+   [:input {:style {:width "300px"
+                    :display "block"
+                    :margin-left "auto"
+                    :margin-right "auto"}
+            ;;:on-change #(reset! nick (-> % .-target .-value))}
+            }]
+   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Tags"]
+   [:input {:style {:width "300px"
+                    :display "block"
+                    :margin-left "auto"
+                    :margin-right "auto"}
+            ;;:on-change #(reset! nick (-> % .-target .-value))}
+            }]
+   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Type"]
+   [:input {:style {:width "300px"
+                    :display "block"
+                    :margin-left "auto"
+                    :margin-right "auto"}
+            ;;:on-change #(reset! nick (-> % .-target .-value))}
+            }]
+   [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Content"]
+   [:textarea {:style {
+                       :width "100%"
+                       :height "500px"}
+               ;;:on-change #(reset! text (-> % .-target .-value))
+               }]
+   [:div {:style {:width "100%" :text-align "center"}
+          :on-click (fn [event] )}
+    "Post!"]])
+
+
+
+(defn newpost []
+  [:div {:style {:position "absolute" :width "100%"}}
+   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
+   [:input {:style {:width "300px"
+                    :display "block"
+                    :margin-left "auto"
+                    :margin-right "auto"}
+            ;;:on-change #(reset! nick (-> % .-target .-value))}
+            }]
+   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Date"]
+   [:input {:style {:width "150px"
+                    :display "block"
+                    :margin-left "auto"
+                    :margin-right "auto"}
+            ;;:on-change #(reset! nick (-> % .-target .-value))}
+            }]
+   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Tags"]
+   [:input {:style {:width "300px"
+                    :display "block"
+                    :margin-left "auto"
+                    :margin-right "auto"}
+            ;;:on-change #(reset! nick (-> % .-target .-value))}
+            }]
+   [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Post"]
+   [:textarea {:style {
+                       :width "100%"
+                       :height "500px"}
+               ;;:on-change #(reset! text (-> % .-target .-value))
+               }]
+   [:div {:style {:width "100%" :text-align "center"}
+          :on-click (fn [event] )}
+    "Post!"]])
 
 
 (defn page []
@@ -401,24 +494,58 @@
                    :margin-left "auto"
                    :margin-right "auto"
                    :background "none"}}
-     [:div {:id "pagecompbody"}      
-      (map (fn [label] ^{:key label} [(pagecard label)]) (@menu-state :newlabels))]
+     (cond
+       (= @page-state :newpost)
+       [newpost]
+       (= @page-state :newproject)
+       [newproject]
+       :else
+       [:div {:id "pagecompbody"}      
+        (map (fn [label] ^{:key label} [(pagecard label)]) (@menu-state :newlabels))])
+
      [:div {:key "logo"
-            :class "logo"} "milgra.com"]]))
+            :class "logo"}
+      [:div {:class "logobutton"} "milgra.com"]]
+     (if @mode-admin
+       [:div {:style {:position "absolute"
+                       :right "-110px"}}
+        [:input {:style {:width "100px"}
+                 :on-change #(reset! pass (-> % .-target .-value))
+                 :type "password" }]
+        [:div {:class "logobutton"
+                :on-click (fn [e] (reset! page-state :newpost))} "add post"]
+        [:div {:class "logobutton"
+               :on-click (fn [e] (reset! page-state :newproject))} "add project"]
+        [:div {:class "logobutton"
+               :on-click (fn [e] (reset! page-state :normal))} "return"]
+        ])
+     ]))
+
 
 (defn parse-params
   "Parse URL parameters into a hashmap"
   []
-  (let [param-strs (-> (.-location js/window) (clojure.string/split #"\?") last (clojure.string/split #"\&"))]
+  (let [param-strs (->
+                    (.-location js/window)
+                    (clojure.string/split #"\?")
+                    last
+                    (clojure.string/split #"\&"))]
     (into {} (for [[k v] (map #(clojure.string/split % #"=") param-strs)]
                [(keyword k) v]))))
 
-(defn start []
-  (println "PARAMS" (parse-params))
-  (reagent/render-component
-   [page]
-   (. js/document (getElementById "app")))
+(defn set-hash! [loc]
+  (set! (.-location js/window) loc))
 
+;;(set-hash! "/dip") ;; => http://localhost:3000/#/dip
+
+(defn start []
+
+  (let [params (parse-params)]
+    (reset! mode-admin (params :admin))
+    (reagent/render-component
+     [page]
+     (. js/document (getElementById "app"))))
+     
   ;; animate to blog
   (reset! selectedpage "blog")
   (let [new-state (concat (filter #(not= % "blog") (@menu-state :newlabels)) ["blog"])]
