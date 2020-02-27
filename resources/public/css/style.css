@@ -14,8 +14,8 @@ body {
 hr {
     border: 0;
     height: 1px;
-    color : #000033;
-    background-color : #000033;
+    color : #003300;
+    background-color : #003300;
     box-shadow: 0 0px 5px 0 rgba(0, 0, 0, 0.2);
 }
 
@@ -145,6 +145,14 @@ textarea {
     cursor : pointer;
     margin-left : 10px;
     margin-right : 10px;
+}
+
+.adminbutton
+{
+    cursor : pointer;
+    padding : 10px;
+    background-color : #66FF6655;
+    box-shadow: 2px 2px 5px 0 rgba(0, 0, 0, 0.2);
 }
 
 .content {

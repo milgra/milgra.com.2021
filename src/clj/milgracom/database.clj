@@ -94,7 +94,7 @@
 
 
 (def all-posts-all-data-q
-  '[:find (pull ?e [:db/id :blog/title :blog/date :blog/content :blog/tags])
+  '[:find (pull ?e [:db/id :blog/title :blog/date :blog/content :blog/tags :blog/comments])
     :where [?e :blog/title]])
 
 
@@ -104,7 +104,7 @@
 
 
 (def posts-between-dates
-  '[:find (pull ?e [:db/id :blog/title :blog/date :blog/content :blog/tags])
+  '[:find (pull ?e [:db/id :blog/title :blog/date :blog/content :blog/tags :blog/comments])
     :in $ ?start ?end
     :where
     [?e :blog/date ?date]
@@ -112,13 +112,13 @@
     [(< ?date ?end)]])
 
 (def all-comments-all-data-q
-  '[:find (pull ?e [:comment/nick :comment/date :comment/content])
+  '[:find (pull ?e [:db/id :comment/nick :comment/date :comment/content])
     :where
     [?e :comment/postid ?postid]])
 
 
 (def comments-for-post-q
-  '[:find (pull ?e [:comment/nick :comment/date :comment/content])
+  '[:find (pull ?e [:db/id :comment/nick :comment/date :comment/content])
     :in $ ?postid
     :where
     [?e :comment/postid ?postid]])
@@ -132,8 +132,7 @@
     [?e :project/title ?title]
     [?e :project/type ?type]
     [?e :project/content ?content]
-    [(= ?type ?wtype)]]
-  )
+    [(= ?type ?wtype)]])
 
 
 ;; test data

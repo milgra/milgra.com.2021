@@ -10,9 +10,9 @@
 
 (defonce menu-labels ["blog" "apps" "games" "protos"])
 (defonce menu-colors [0x9dfc92
-                      0x2ff01a
+                      0x4ff05a
                       0x9dfc92
-                      0x2ff01a])
+                      0x4ff05a])
 (defonce tabwidth 50)
 (defonce monthnames ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"])
 
@@ -22,12 +22,14 @@
 (defonce page-state (atom :normal))
 (defonce mode-admin (atom false))
 (defonce pass (atom nil))
+(defonce posttoedit (atom nil))
 
 (defn get-posts [year month blog-posts]
   (async/go
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
                                                     {:query-params {:year year :month month}}))
           posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))]
+      (println "posts " posts)
       (reset! blog-posts posts))))
 
 
@@ -38,10 +40,11 @@
           months (result :months)
           tags (result :tags) 
           labels (reduce
-                  (fn [res [year month]] (conj res (str (nth monthnames month) " " year)))
+                  (fn [res [year month]] (conj res (str (nth monthnames (dec month)) " " year)))
                   []
                   months)
-          [year month] (if (> (count months) 0) (last months))]
+          [year month] (if (> (count months) 0) (last months))
+          ]
       (reset! blog-months months)
       (reset! lmenuitems labels)
       (reset! rmenuitems tags)
@@ -79,12 +82,14 @@
       (get-comments postid comments)
       )))
 
-(defn delete-comment [id]
+(defn delete-comment [id pass]
   (async/go
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/delcomment"
-                                                    {:query-params {:id id}}))
+                                                    {:query-params {:commid id :pass pass}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
-          status (result :result)])))
+          status (result :result)]
+      (println "del" result)
+      )))
  
 
 (defn get-metrics
@@ -124,7 +129,7 @@
         {:id "rightmenubtn"
          :class "rightmenubtn"
          :style {:transform (str "translate(" @pos-spring "px)")
-                 :background (if (= (mod index 2) 0) "#9dfc92" "#2ff01a")}
+                 :background (if (= (mod index 2) 0) "#9dfc92" "#4ff05a")}
          :on-click (fn [e]
                      (reset! pos 40)
                      (reset! selecteditem label)
@@ -173,7 +178,7 @@
         {:id "leftmenubtn"
          :class "leftmenubtn"
          :style {:transform (str "translate(" @pos-spring "px)")
-                 :background (if (= (mod index 2) 0) "#9dfc92" "#2ff01a")
+                 :background (if (= (mod index 2) 0) "#9dfc92" "#4ff05a")
                  }
          :on-click (fn [e]
                      (reset! pos 40)
@@ -209,7 +214,7 @@
    "www.milgra.com by Milan Toth | Powered by Clojure and Datomic."])
 
 
-(defn comments [postid comments showcomments showeditor]
+(defn comments [post comments showcomments showeditor]
   (let [nick (atom nil)
         text (atom nil)
         code (atom nil)]
@@ -220,9 +225,9 @@
                        :cursor "pointer"}
                :class "shwocommentbtn"
                :on-click (fn []
-                           (get-comments postid comments) 
+                           (get-comments (post :id) comments) 
                            (swap! showcomments not))}
-         "5 comments"]
+         (str (post :comments) " comments")]
         "|"
         [:div {:style {:padding-left "20px"
                        :cursor "pointer"}
@@ -232,8 +237,10 @@
         (if @mode-admin
           [:div {:style {:padding-left "20px"
                        :cursor "pointer"}
-               :class "shwocommentbtn"
-               :on-click (fn [] (swap! showeditor not))}
+                 :class "shwocommentbtn"
+                 :on-click (fn []
+                             (reset! page-state :newpost)
+                             (reset! posttoedit post))}
            "[Edit post]"])]
        
        (if @showeditor
@@ -257,11 +264,13 @@
                             :margin-right "auto"}
                     :on-change #(reset! code (-> % .-target .-value))}]
            [:br]
-           [:div {:style {:width "100%" :text-align "center"}
+           [:div {:class "showcommentbtn"
+                  :style {:cursor "pointer"
+                          :width "100%"
+                          :text-align "center"}
                   :on-click (fn [event]
-                               (swap! showeditor not)
-                               (if @showeditor (send-comment postid comments @nick @text @code)) 
-                               )}
+                              (if @showeditor (send-comment (post :id) comments @nick @text @code))
+                              (swap! showeditor not))}
             "Send Comment"]
            ]])
        (if (and @showcomments @comments)
@@ -275,7 +284,7 @@
                  (if @mode-admin
                    [:div {:style {:cursor "pointer"}
                           :class "showcommentbtn"
-                          :on-click (fn [event] (delete-comment (comment :id)))} "Delete comment"])
+                          :on-click (fn [event] (delete-comment (comment :id) @pass ))} "Delete comment"])
 
                  [:hr {:style {:width "20%" :background-color "#FFFFFF"}}]
                  ])
@@ -323,7 +332,7 @@
                   [:h2 (clojure.string/join "," (post :tags))]
                   (m/component (m/md->hiccup (post :content)))
                   [:br]
-                  [comments (post :id) comms showcomments showeditor]
+                  [comments post comms showcomments showeditor]
                   [:br]
                   [:hr]
                   [:br]
@@ -412,72 +421,87 @@
 
 
 (defn newproject []
-  [:div {:style {:position "absolute" :width "100%"}}
-   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
-   [:input {:style {:width "300px"
-                    :display "block"
-                    :margin-left "auto"
-                    :margin-right "auto"}
-            ;;:on-change #(reset! nick (-> % .-target .-value))}
-            }]
-   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Tags"]
-   [:input {:style {:width "300px"
-                    :display "block"
-                    :margin-left "auto"
-                    :margin-right "auto"}
-            ;;:on-change #(reset! nick (-> % .-target .-value))}
-            }]
-   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Type"]
-   [:input {:style {:width "300px"
-                    :display "block"
-                    :margin-left "auto"
-                    :margin-right "auto"}
-            ;;:on-change #(reset! nick (-> % .-target .-value))}
-            }]
-   [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Content"]
-   [:textarea {:style {
-                       :width "100%"
-                       :height "500px"}
-               ;;:on-change #(reset! text (-> % .-target .-value))
-               }]
-   [:div {:style {:width "100%" :text-align "center"}
-          :on-click (fn [event] )}
-    "Post!"]])
-
-
+  (let [title (clojure.core/atom nil)
+        tags (clojure.core/atom nil)
+        type (clojure.core/atom nil)
+        content (clojure.core/atom nil)]
+    [:div {:style {:position "absolute" :width "100%"}}
+     [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
+     [:input {:style {:width "300px"
+                      :display "block"
+                      :margin-left "auto"
+                      :margin-right "auto"}
+              :on-change #(reset! title (-> % .-target .-value))}]
+     [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Tags"]
+     [:input {:style {:width "200px"
+                      :display "block"
+                      :margin-left "auto"
+                      :margin-right "auto"}
+            :on-change #(reset! tags (-> % .-target .-value))}]
+     [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Type"]
+     [:input {:style {:width "300px"
+                      :display "block"
+                      :margin-left "auto"
+                      :margin-right "auto"}
+              :on-change #(reset! type (-> % .-target .-value))}]
+     [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Content"]
+     [:textarea {:style {:width "100%" :height "500px"}
+                 :on-change #(reset! content (-> % .-target .-value))}]
+     [:div {:style {:cursor "pointer" :width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}
+            :on-click (fn [event]
+                        (println @title @tags @type @content)
+                        ((fn []
+                           (async/go
+                             (let [{:keys [status body]} (async/<! (http/post "http://localhost:3000/newproject"
+                                                                              {:form-params {:title @title :tags @tags :type @type :content @content :pass @pass }}))
+                                   result (js->clj (.parse js/JSON body) :keywordize-keys true)
+                                   status (result :result)]
+                               (println "status" ))))))
+                        } "Send"]]))
 
 (defn newpost []
+  (let [title (clojure.core/atom (@posttoedit :title))
+        date (clojure.core/atom (str (@posttoedit :date) "T00:00:00") )
+        tags (clojure.core/atom (@posttoedit :tags))
+        content (clojure.core/atom (@posttoedit :content))]
   [:div {:style {:position "absolute" :width "100%"}}
    [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
-   [:input {:style {:width "300px"
+   [:input {:default-value @title
+            :style {:width "300px"
                     :display "block"
                     :margin-left "auto"
                     :margin-right "auto"}
-            ;;:on-change #(reset! nick (-> % .-target .-value))}
-            }]
+            :on-change #(reset! title (-> % .-target .-value))}]
    [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Date"]
-   [:input {:style {:width "150px"
+   [:input {:default-value (if @date @date "2015-12-05T00:00:00")
+            :style {:width "200px"
                     :display "block"
                     :margin-left "auto"
                     :margin-right "auto"}
-            ;;:on-change #(reset! nick (-> % .-target .-value))}
-            }]
+            :on-change #(reset! date (-> % .-target .-value))}]
    [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Tags"]
-   [:input {:style {:width "300px"
+   [:input {:default-value @tags
+            :style {:width "300px"
                     :display "block"
                     :margin-left "auto"
                     :margin-right "auto"}
-            ;;:on-change #(reset! nick (-> % .-target .-value))}
-            }]
+            :on-change #(reset! tags (-> % .-target .-value))}]
    [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Post"]
-   [:textarea {:style {
-                       :width "100%"
-                       :height "500px"}
-               ;;:on-change #(reset! text (-> % .-target .-value))
-               }]
-   [:div {:style {:width "100%" :text-align "center"}
-          :on-click (fn [event] )}
-    "Post!"]])
+   [:textarea {:default-value @content
+               :style {:width "100%" :height "500px"}
+               :on-change #(reset! content (-> % .-target .-value))}]
+   [:div {:style {:cursor "pointer" :width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}
+          :on-click (fn [event]
+                      ((fn []
+                        (async/go
+                          (let [{:keys [status body]}
+                                (async/<! (http/post
+                                           (if @posttoedit "http://localhost:3000/updatepost" "http://localhost:3000/newpost")
+                                           {:form-params {:title @title :date @date :tags @tags :content @content :pass @pass :postid (@posttoedit :id)}}))
+                                result (js->clj (.parse js/JSON body) :keywordize-keys true)
+                                status (result :result)]
+                            (println "status" result)))))
+                      )} "Send"]]))
 
 
 (defn page []
@@ -508,18 +532,16 @@
       [:div {:class "logobutton"} "milgra.com"]]
      (if @mode-admin
        [:div {:style {:position "absolute"
-                       :right "-110px"}}
+                      :right "-110px"}}
         [:input {:style {:width "100px"}
                  :on-change #(reset! pass (-> % .-target .-value))
                  :type "password" }]
-        [:div {:class "logobutton"
-                :on-click (fn [e] (reset! page-state :newpost))} "add post"]
-        [:div {:class "logobutton"
+        [:div {:class "adminbutton"
+               :on-click (fn [e] (reset! page-state :newpost))} "add post"]
+        [:div {:class "adminbutton"
                :on-click (fn [e] (reset! page-state :newproject))} "add project"]
-        [:div {:class "logobutton"
-               :on-click (fn [e] (reset! page-state :normal))} "return"]
-        ])
-     ]))
+        [:div {:class "adminbutton"
+               :on-click (fn [e] (reset! page-state :normal))} "return"]])]))
 
 
 (defn parse-params
@@ -533,10 +555,12 @@
     (into {} (for [[k v] (map #(clojure.string/split % #"=") param-strs)]
                [(keyword k) v]))))
 
+
 (defn set-hash! [loc]
   (set! (.-location js/window) loc))
 
 ;;(set-hash! "/dip") ;; => http://localhost:3000/#/dip
+
 
 (defn start []
 

@@ -4,13 +4,14 @@
             [milgracom.database :as db]
             [clojure.data.json :as json]
             [datomic.api :as d]
+            [crypto.password.pbkdf2 :as password]
             [ring.util.response :as resp]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]))
 
 
 (def uri "datomic:dev://localhost:4334/milgracom")
-
+(def epass "AYag$X5r8CmDjJOQ=$uDGDAgnDrf3Gju5pPq9bTWWpsMc=")
 
 (defn get-all-posts
   "get all posts"
@@ -110,7 +111,7 @@
         end (clojure.instant/read-instant-date  (format "%d-%02d-01T00:00:00" endyear endmonth))
         posts (d/q db/posts-between-dates db start end)]
     (map (fn [[{date :blog/date :as val}]]
-           (assoc val :blog/date (.format (java.text.SimpleDateFormat. "MM/dd/yyyy") date)))
+           (assoc val :blog/date (.format (java.text.SimpleDateFormat. "yyyy-dd-MM") date)))
          posts)))
 
 ;;(get-posts-for-month 2018 4)
@@ -124,7 +125,7 @@
         comments (d/q db/comments-for-post-q db postid)]
     (println "res" comments)
     (map (fn [[{date :comment/date :as val}]]
-           (assoc val :comment/date (.format (java.text.SimpleDateFormat. "MM/dd/yyyy") date)))
+           (assoc val :comment/date (.format (java.text.SimpleDateFormat. "yyyy-dd-MM") date)))
     comments)))
 
 ;;(get-post-comments 17592186045425)
@@ -140,15 +141,67 @@
 
 (get-projects "game")
 
-(defn add-post [pass title date content]
-  (let [data [{:blog/title title ;;"Első post"
-               :blog/date date ;; #inst "2015-12-05T00:00:00" 
-               :blog/content content ;; "<h>Ehun egy html.<br>Ehun meg egy</h>"}]
-               }]
-        conn (d/connect uri)
-        db (d/db conn)
-        resp (d/transact conn data)]
-      (println "post insert resp" resp)))
+(defn add-post [pass title date tags content]
+  (println "add post" pass title date tags content)
+  (if (password/check pass epass)
+    (let [data [{:blog/title title ;;"Első post"
+                 :blog/tags (if (= (type tags) "java.lang.String") (clojure.string/split tags #",") tags)
+                 :blog/date (clojure.instant/read-instant-date date) ;; #inst "2015-12-05T00:00:00" 
+                 :blog/content content ;; "<h>Ehun egy html.<br>Ehun meg egy</h>"}]
+                 }]
+          conn (d/connect uri)
+          db (d/db conn)
+          resp (d/transact conn data)]
+      (println "resp" resp)
+      "OK")
+    "Invalid pass"))
+
+(defn update-post [pass postid title date tags content]
+  (println "add post" pass title date tags content)
+  (if (password/check pass epass)
+    (let [data [{:db/id postid
+                 :blog/title title ;;"Első post"
+                 :blog/tags (if (= (type tags) "java.lang.String") (clojure.string/split tags #",") tags)
+                 :blog/date (clojure.instant/read-instant-date date) ;; #inst "2015-12-05T00:00:00" 
+                 :blog/content content ;; "<h>Ehun egy html.<br>Ehun meg egy</h>"}]
+                 }]
+          conn (d/connect uri)
+          db (d/db conn)
+          resp (d/transact conn data)]
+      (println "resp" resp)
+      "OK")
+    "Invalid pass"))
+
+
+(defn add-project [pass title tags type content]
+  (println "add project" pass title tags type content)
+  (if (password/check pass epass)
+    (let [data [{:project/title title ;; "Termite 3D"
+                 :project/tags (clojure.string/split tags #",")
+                 :project/type type ;; "game" 
+                 :project/content content ;; "Egy kurva jo jatek"
+                 }]
+          conn (d/connect uri)
+          db (d/db conn)
+          resp (d/transact conn data)]
+      "OK")
+    "Invalid password"
+    ))
+
+(defn -project [pass title tags type content]
+  (println "add project" pass title tags type content)
+  (if (password/check pass epass)
+    (let [data [{:project/title title ;; "Termite 3D"
+                 :project/tags (clojure.string/split tags #",")
+                 :project/type type ;; "game" 
+                 :project/content content ;; "Egy kurva jo jatek"
+                 }]
+          conn (d/connect uri)
+          db (d/db conn)
+          resp (d/transact conn data)]
+      "OK")
+    "Invalid password"
+    ))
 
 (defn add-comment [postid nick content code]
   (println "add-comment" postid nick content code)
@@ -158,22 +211,19 @@
                :comment/date (new java.util.Date)
                }]
         conn (d/connect uri)
-        db (d/db conn)
         resp (d/transact conn data)]
     (println "resp" resp)
     "OK"))
 
-;;(add-comment 34556 "milgra" "faszt" 345)
+(defn remove-comment [commentid pass]
+  (if (password/check pass epass)
+    (let [conn (d/connect uri)
+          resp (d/transact conn [[:db.fn/retractEntity commentid]])]
+      (println "resp" resp)
+      "OK")
+    "Invalid pass"))
 
-(defn add-project [pass title type content]
-  (let [data [{:project/title title ;; "Termite 3D"
-               :project/type type ;; "game" 
-               :project/content content ;; "Egy kurva jo jatek"
-               }]
-        conn (d/connect uri)
-        db (d/db conn)
-        resp (d/transact conn data)]
-    (println "project insert resp" resp)))
+;;(add-comment 34556 "milgra" "faszt" 345)
 
 
 (defn get-client-ip [req]
@@ -190,6 +240,11 @@
   (GET "/projects" [type] (json/write-str {:projects (get-projects type)
                                           :tags (get-project-tags type)}))
   (GET "/newcomment" [postid nick text code] (json/write-str {:result (add-comment (Long/parseLong postid) nick text code)}))
+  (GET "/delcomment" [commid pass] (json/write-str {:result (remove-comment (Long/parseLong commid) pass)}))
+  (POST "/newproject" [pass title tags type content] (json/write-str {:result (add-project pass title tags type content)}))
+  (POST "/newpost" [pass title date tags content] (json/write-str {:result (add-post pass title date tags content)}))
+  (POST "/updatepost" [pass postid title date tags content] (json/write-str {:result (update-post pass (Long/parseLong postid) title date tags content)}))
+  
   (route/resources "/")
   (route/not-found "Not Found"))
 
@@ -197,9 +252,10 @@
 (def app
   (-> app-routes
       (wrap-cors :access-control-allow-origin [#".*"]
-                 :access-control-allow-methods [:get]
-                 :access-control-allow-credentials "true")
-      (wrap-defaults site-defaults)))
+                 :access-control-allow-methods [:post :get]
+                 :access-control-allow-credentials "true"
+                 :Access-Control-Allow-Headers "Content-Type, Accept, Authorization, Authentication, If-Match, If-None-Match, If-Modified-Since, If-Unmodified-Since")
+      (wrap-defaults (assoc-in site-defaults [:security :anti-forgery] false))))
 
 ;; init database on start
 (setup)
