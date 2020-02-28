@@ -13,6 +13,15 @@
 (def uri "datomic:dev://localhost:4334/milgracom")
 (def epass "AYag$X5r8CmDjJOQ=$uDGDAgnDrf3Gju5pPq9bTWWpsMc=")
 
+(defonce ip-to-result (atom []))
+(defonce number-names ["zero" "one" "two" "three" "four" "five" "six" "seven" "eight" "nine"])
+
+
+(defn get-client-ip [req]
+  (if-let [ips (get-in req [:headers "x-forwarded-for"])]
+    (-> ips (clojure.string/split #",") first)
+    (:remote-addr req)))
+
 
 (defn get-all-posts
   "get all posts"
@@ -178,22 +187,41 @@
     "Invalid pass"))
 
 
-(defn add-comment [postid nick content code]
+(defn add-comment [postid nick content code request]
   (println "add-comment" postid nick content code)
   (if (and postid nick content code)
-    (let [dbpostid (Long/parseLong postid)
-          data [{:comment/postid dbpostid
-                 :comment/content content ;; "Faszasag!!!"
-                 :comment/nick nick ;; "milgra@milgra.com"
-                 :comment/date (new java.util.Date)
-                 }]
-          conn (d/connect uri)
-          resp (d/transact conn data)]
-      (println "resp" resp)
+    (let [clientip (get-client-ip request)
+          checks (filter (fn [{ip :ip result :result}] (and (= ip clientip) (= result code)))  @ip-to-result)]
+          ;; check validity
+          (if (> (count checks) 0)
+            (let [dbpostid (Long/parseLong postid)
+                  data [{:comment/postid dbpostid
+                         :comment/content content ;; "Faszasag!!!"
+                         :comment/nick nick ;; "milgra@milgra.com"
+                         :comment/date (new java.util.Date)}]
+                  conn (d/connect uri)
+                  resp (d/transact conn data)]
+              (println "resp" resp))
+            "Invalid code")
       "OK"))
   "Invalid parameters"
   )
 
+
+(defn genquestion [ip]
+  (let [numa (rand-int 10)
+        numb (rand-int 10)
+        namea (nth number-names numa)
+        nameb (nth number-names numb)
+        items (count @ip-to-result)]
+    (println "genquestion" ip "length items" )
+    ;; remove old items to keep memory clean
+    (if (> items 5) (reset! ip-to-result (subvec @ip-to-result (- items 5))))
+    ;; add new item
+    (swap! ip-to-result conj {:ip ip :result (+ numa numb)})
+    (str "How much is " namea " plus " nameb "?")))
+
+;; (genquestion "156.45.67.66")
 
 (defn remove-comment [pass id]
   (if (password/check pass epass)
@@ -205,11 +233,6 @@
     "Invalid pass"))
 
 
-(defn get-client-ip [req]
-  (if-let [ips (get-in req [:headers "x-forwarded-for"])]
-    (-> ips (clojure.string/split #",") first)
-    (:remote-addr req)))
-
 
 (defroutes app-routes
   (GET "/" [] "BLANK")
@@ -217,7 +240,8 @@
   (GET "/postsbydate" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
   (GET "/posts" [year month type] (json/write-str {:posts (get-posts-for-type type)}))
   (GET "/comments" [postid] (json/write-str {:comments (get-post-comments postid)}))
-  (GET "/newcomment" [postid nick text code] (json/write-str {:result (add-comment postid nick text code)}))
+  (GET "/genquestion" request (json/write-str {:question (genquestion (get-client-ip request))}))
+  (GET "/newcomment" [postid nick text code :as request] (json/write-str {:result (add-comment postid nick text code request)}))
   (GET "/delcomment" [pass id] (json/write-str {:result (remove-comment pass id)}))
   (POST "/newpost" [pass title date tags content] (json/write-str {:result (add-post pass title date tags content)}))
   (POST "/updatepost" [pass id title date tags type content] (json/write-str {:result (update-post pass id title date tags type content)}))
