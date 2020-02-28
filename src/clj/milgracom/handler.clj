@@ -13,12 +13,22 @@
 (def uri "datomic:dev://localhost:4334/milgracom")
 (def epass "AYag$X5r8CmDjJOQ=$uDGDAgnDrf3Gju5pPq9bTWWpsMc=")
 
+
 (defn get-all-posts
   "get all posts"
   []
   (let [conn (d/connect uri)
         db (d/db conn)
         posts (d/q db/all-posts-all-data-q db)]
+    posts))
+
+
+(defn get-all-comments
+  "get all comments"
+  []
+  (let [conn (d/connect uri)
+        db (d/db conn)
+        posts (d/q db/all-comments-all-data-q db)]
     posts))
 
 
@@ -29,12 +39,10 @@
     (if succ 
       (let [conn (d/connect uri)
             db (d/db conn)]
-        (let [resp (d/transact conn db/blog-schema)]
-          (println "blog schema insert resp" resp))
+        (let [resp (d/transact conn db/post-schema)]
+          (println "post schema insert resp" resp))
         (let [resp (d/transact conn db/comment-schema)]
-          (println "comment schema insert resp" resp))
-        (let [resp (d/transact conn db/project-schema)]
-          (println "project schema insert resp" resp)))
+          (println "comment schema insert resp" resp)))
       (println "db exists"))))
 
 
@@ -48,8 +56,6 @@
   []
   (let [conn (d/connect uri)
         db (d/db conn)]
-    (let [resp (d/transact conn db/first-projects)]
-      (println "project insert resp" resp))
     (let [resp (d/transact conn db/first-posts)]
       (println "post insert resp" resp))
     (let [postid ((first (first (get-all-posts))) :db/id)
@@ -58,71 +64,74 @@
       (println "comment insert resp" resp))))
 
 
-(defn get-all-comments
-  "get all comments"
-  []
-  (let [conn (d/connect uri)
-        db (d/db conn)
-        posts (d/q db/all-comments-all-data-q db)]
-    posts))
-
-
 (defn get-post-months
   "get all months where posts exist"
-  []
-  (let [conn (d/connect uri)
+  [type]
+  (let [dbtype (keyword type)
+        conn (d/connect uri)
         db (d/db conn)
-        dates (d/q db/all-post-months-q db)]
+        dates (d/q db/all-post-months-by-type-q db dbtype)]
+    (println "dates" dates)
     (reverse
      (sort
       (set
-       (map (fn [item]
-              (let [date (nth item 1)]
-                [(+ 1900 (.getYear date)) (inc (.getMonth date))]))
+       (map (fn [[{date :post/date}]]
+              [(+ 1900 (.getYear date)) (inc (.getMonth date))])
             dates))))))
 
+;;(get-post-months "blog")
 
 (defn get-post-tags
   "get all tags in posts"
-  []
-  (let [conn (d/connect uri)
-        db (d/db conn)
-        tags (d/q db/all-post-tags-q db)]
-    (reduce (fn [res item] (into res ((first item) :blog/tags)) ) #{} tags)))
-
-
-(defn get-project-tags
-  "get all tags in posts"
   [type]
-  (let [conn (d/connect uri)
+  (let [dbtype (keyword type)
+        conn (d/connect uri)
         db (d/db conn)
-        tags (d/q db/all-project-tags-q db type)]
-    (reduce (fn [res item] (into res ((first item) :project/tags)) ) #{} tags)))
+        tags (d/q db/all-post-tags-by-type-q db dbtype)]
+    (reduce (fn [res item] (into res ((first item) :post/tags)) ) #{} tags)))
 
+;;(get-post-tags "blog")
 
 (defn get-posts-for-month
   "get all posts for given year and month"
-  [year month]
-  (let [conn (d/connect uri)
+  [year month type]
+  (let [dbyear (Integer/parseInt year)
+        dbmonth (Integer/parseInt month)
+        dbtype (keyword type)
+        conn (d/connect uri)
         db (d/db conn)
-        endmonth (if (= month 12) 1 (+ month 1))
-        endyear (if (= month 12) (+ year 1) year)
-        start (clojure.instant/read-instant-date (format "%d-%02d-01T00:00:00" year month))
+        endmonth (if (= dbmonth 12) 1 (+ dbmonth 1))
+        endyear (if (= dbmonth 12) (+ dbyear 1) dbyear)
+        start (clojure.instant/read-instant-date (format "%d-%02d-01T00:00:00" dbyear dbmonth))
         end (clojure.instant/read-instant-date  (format "%d-%02d-01T00:00:00" endyear endmonth))
-        posts (d/q db/posts-between-dates db start end)]
-    (map (fn [[{date :blog/date :as val}]]
-           (assoc val :blog/date (.format (java.text.SimpleDateFormat. "yyyy-dd-MM") date)))
+        posts (d/q db/posts-between-dates-by-type-q db start end dbtype)]
+    (map (fn [[{date :post/date :as val}]]
+           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-dd-MM") date)))
          posts)))
 
-;;(get-posts-for-month 2018 4)
+;;(get-posts-for-month 2018 4 "blog")
+
+(defn get-posts-for-type
+  "get all posts for given year and month"
+  [type]
+  (let [dbtype (keyword type)
+        conn (d/connect uri)
+        db (d/db conn)
+        posts (d/q db/all-posts-all-data-by-type-q db dbtype)]
+    (map (fn [[{date :post/date :as val}]]
+           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-dd-MM") date)))
+         posts)))
+
+;;(get-posts-for-type "game")
 
 (defn get-post-comments
   "returns comments for give post id"
   [postid]
   (println "get-post-comments" postid)
-  (let [conn (d/connect uri)
+  (let [dbpostid (Long/parseLong postid)
+        conn (d/connect uri)
         db (d/db conn)
-        comments (d/q db/comments-for-post-q db postid)]
+        comments (d/q db/comments-for-post-q db dbpostid)]
     (println "res" comments)
     (map (fn [[{date :comment/date :as val}]]
            (assoc val :comment/date (.format (java.text.SimpleDateFormat. "yyyy-dd-MM") date)))
@@ -130,40 +139,15 @@
 
 ;;(get-post-comments 17592186045425)
 
-(defn get-projects
-  "return all projects with given type"
-  [type]
-  (println "type" type)
-  (let [conn (d/connect uri)
-        db (d/db conn)
-        projects (d/q db/projects-for-type-q db type)]
-    projects))
-
-(get-projects "game")
-
-(defn add-post [pass title date tags content]
+(defn add-post [pass title date tags type content]
   (println "add post" pass title date tags content)
   (if (password/check pass epass)
-    (let [data [{:blog/title title ;;"Első post"
-                 :blog/tags (if (= (type tags) "java.lang.String") (clojure.string/split tags #",") tags)
-                 :blog/date (clojure.instant/read-instant-date date) ;; #inst "2015-12-05T00:00:00" 
-                 :blog/content content ;; "<h>Ehun egy html.<br>Ehun meg egy</h>"}]
-                 }]
-          conn (d/connect uri)
-          db (d/db conn)
-          resp (d/transact conn data)]
-      (println "resp" resp)
-      "OK")
-    "Invalid pass"))
-
-(defn update-post [pass postid title date tags content]
-  (println "add post" pass title date tags content)
-  (if (password/check pass epass)
-    (let [data [{:db/id postid
-                 :blog/title title ;;"Első post"
-                 :blog/tags (if (= (type tags) "java.lang.String") (clojure.string/split tags #",") tags)
-                 :blog/date (clojure.instant/read-instant-date date) ;; #inst "2015-12-05T00:00:00" 
-                 :blog/content content ;; "<h>Ehun egy html.<br>Ehun meg egy</h>"}]
+    (let [dbtype (keyword type)
+          data [{:post/title title ;;"Első post"
+                 :post/type dbtype
+                 :post/tags (if (= (type tags) "java.lang.String") (clojure.string/split tags #",") tags)
+                 :post/date (clojure.instant/read-instant-date date) ;; #inst "2015-12-05T00:00:00" 
+                 :post/content content ;; "<h>Ehun egy html.<br>Ehun meg egy</h>"}]
                  }]
           conn (d/connect uri)
           db (d/db conn)
@@ -173,58 +157,32 @@
     "Invalid pass"))
 
 
-(defn add-project [pass title tags type content]
-  (println "add project" pass title tags type content)
+(defn update-post [pass id title date tags type content]
+  (println "add post" pass title date tags content)
+  ;; todo check input validity
   (if (password/check pass epass)
-    (let [data [{:project/title title ;; "Termite 3D"
-                 :project/tags (clojure.string/split tags #",")
-                 :project/type type ;; "game" 
-                 :project/content content ;; "Egy kurva jo jatek"
+    (let [dbtype (keyword type)
+          dbid (Long/parseLong id)
+          data [{:db/id id
+                 :post/title title ;;"Első post"
+                 :post/type dbtype
+                 :post/tags (if (= (type tags) "java.lang.String") (clojure.string/split tags #",") tags)
+                 :post/date (clojure.instant/read-instant-date date) ;; #inst "2015-12-05T00:00:00" 
+                 :post/content content ;; "<h>Ehun egy html.<br>Ehun meg egy</h>"}]
                  }]
           conn (d/connect uri)
           db (d/db conn)
           resp (d/transact conn data)]
       (println "resp" resp)
       "OK")
-    "Invalid password"
-    ))
+    "Invalid pass"))
 
-(defn update-project [pass id title tags type content]
-  (println "update project" pass title tags type content)
-  (if (password/check pass epass)
-    (let [data [{:db/id id
-                 :project/title title ;; "Termite 3D"
-                 :project/tags (clojure.string/split tags #",")
-                 :project/type type ;; "game" 
-                 :project/content content ;; "Egy kurva jo jatek"
-                 }]
-          conn (d/connect uri)
-          db (d/db conn)
-          resp (d/transact conn data)]
-      (println "resp" resp)
-      "OK")
-    "Invalid password"
-    ))
-
-(defn -project [pass title tags type content]
-  (println "add project" pass title tags type content)
-  (if (password/check pass epass)
-    (let [data [{:project/title title ;; "Termite 3D"
-                 :project/tags (clojure.string/split tags #",")
-                 :project/type type ;; "game" 
-                 :project/content content ;; "Egy kurva jo jatek"
-                 }]
-          conn (d/connect uri)
-          db (d/db conn)
-          resp (d/transact conn data)]
-      "OK")
-    "Invalid password"
-    ))
 
 (defn add-comment [postid nick content code]
   (println "add-comment" postid nick content code)
   (if (and postid nick content code)
-    (let [data [{:comment/postid postid
+    (let [dbpostid (Long/parseLong postid)
+          data [{:comment/postid dbpostid
                  :comment/content content ;; "Faszasag!!!"
                  :comment/nick nick ;; "milgra@milgra.com"
                  :comment/date (new java.util.Date)
@@ -236,15 +194,14 @@
   "Invalid parameters"
   )
 
-(defn remove-comment [commentid pass]
+(defn remove-comment [pass id]
   (if (password/check pass epass)
-    (let [conn (d/connect uri)
-          resp (d/transact conn [[:db.fn/retractEntity commentid]])]
+    (let [dbid (Long/parseLong id)
+          conn (d/connect uri)
+          resp (d/transact conn [[:db.fn/retractEntity dbid]])]
       (println "resp" resp)
       "OK")
     "Invalid pass"))
-
-;;(add-comment 34556 "milgra" "faszt" 345)
 
 
 (defn get-client-ip [req]
@@ -255,18 +212,13 @@
 
 (defroutes app-routes
   (GET "/" [] "BLANK")
-  (GET "/months" [] (json/write-str {:months (get-post-months)
-                                     :tags (get-post-tags)}))
-  (GET "/posts" [year month] (json/write-str {:posts (get-posts-for-month (Integer/parseInt year) (Integer/parseInt month))}))
-  (GET "/comments" [postid] (json/write-str {:comments (get-post-comments (Long/parseLong postid))}))
-  (GET "/projects" [type] (json/write-str {:projects (get-projects type)
-                                           :tags (get-project-tags type)}))
-  (GET "/newcomment" [postid nick text code] (json/write-str {:result (add-comment (Long/parseLong postid) nick text code)}))
-  (GET "/delcomment" [commid pass] (json/write-str {:result (remove-comment (Long/parseLong commid) pass)}))
-  (POST "/newproject" [pass title tags type content] (json/write-str {:result (add-project pass title tags type content)}))
+  (GET "/months" [type] (json/write-str {:months (get-post-months type) :tags (get-post-tags type)}))
+  (GET "/posts" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
+  (GET "/comments" [postid] (json/write-str {:comments (get-post-comments postid)}))
+  (GET "/newcomment" [postid nick text code] (json/write-str {:result (add-comment postid nick text code)}))
+  (GET "/delcomment" [pass id] (json/write-str {:result (remove-comment pass id)}))
   (POST "/newpost" [pass title date tags content] (json/write-str {:result (add-post pass title date tags content)}))
-  (POST "/updatepost" [pass id title date tags content] (json/write-str {:result (update-post pass (Long/parseLong id) title date tags content)}))
-  (POST "/updateproject" [pass id title tags type content] (json/write-str {:result (update-project pass (Long/parseLong id) title tags type content)}))
+  (POST "/updatepost" [pass id title date tags type content] (json/write-str {:result (update-post pass id title date tags type content)}))
   
   (route/resources "/")
   (route/not-found "Not Found"))
