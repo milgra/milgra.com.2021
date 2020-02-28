@@ -67,6 +67,7 @@
 (defn get-post-months
   "get all months where posts exist"
   [type]
+  (println "type" type)
   (let [dbtype (keyword type)
         conn (d/connect uri)
         db (d/db conn)
@@ -127,7 +128,6 @@
 (defn get-post-comments
   "returns comments for give post id"
   [postid]
-  (println "get-post-comments" postid)
   (let [dbpostid (Long/parseLong postid)
         conn (d/connect uri)
         db (d/db conn)
@@ -194,6 +194,7 @@
   "Invalid parameters"
   )
 
+
 (defn remove-comment [pass id]
   (if (password/check pass epass)
     (let [dbid (Long/parseLong id)
@@ -213,7 +214,8 @@
 (defroutes app-routes
   (GET "/" [] "BLANK")
   (GET "/months" [type] (json/write-str {:months (get-post-months type) :tags (get-post-tags type)}))
-  (GET "/posts" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
+  (GET "/postsbydate" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
+  (GET "/posts" [year month type] (json/write-str {:posts (get-posts-for-type type)}))
   (GET "/comments" [postid] (json/write-str {:comments (get-post-comments postid)}))
   (GET "/newcomment" [postid nick text code] (json/write-str {:result (add-comment postid nick text code)}))
   (GET "/delcomment" [pass id] (json/write-str {:result (remove-comment pass id)}))

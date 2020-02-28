@@ -23,21 +23,35 @@
 (defonce mode-admin (atom false))
 (defonce pass (atom nil))
 (defonce posttoedit (atom nil))
-(defonce projecttoedit (atom nil))
 (defonce blog-project (atom nil))
 
-(defn get-posts [year month blog-posts]
+
+(defn get-posts-by-date [year month type blog-posts]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
-                                                    {:query-params {:year year :month month}}))
+    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/postsbydate"
+                                                    {:query-params {:year year :month month :type type}}))
           posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))]
       (println "posts " posts)
       (reset! blog-posts posts))))
 
 
-(defn get-months [lmenuitems rmenuitems blog-months blog-posts]
+(defn get-posts [type lmenuitems rmenuitems blog-posts]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"))
+    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
+                                                    {:query-params {:type type}}))
+          posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))
+          labels (map #(% :title) posts)
+          tags (map #(% :tags) posts)]
+      (reset! blog-posts posts)
+      (reset! blog-project (first posts))
+      (reset! lmenuitems labels)
+      (reset! rmenuitems tags))))
+
+
+(defn get-months [type lmenuitems rmenuitems blog-months blog-posts]
+  (async/go
+    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"
+                                                    {:query-params {:type type}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           months (result :months)
           tags (result :tags) 
@@ -50,21 +64,7 @@
       (reset! blog-months months)
       (reset! lmenuitems labels)
       (reset! rmenuitems tags)
-      (get-posts year month blog-posts))))
-
-
-(defn get-projects [type lmenuitems rmenuitems blog-projects]
-  (async/go
-    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/projects"
-                                                    {:query-params {:type type}}))
-          result (js->clj (.parse js/JSON body) :keywordize-keys true)
-          projects (map first (result :projects))
-          labels (map #(% :title) projects)
-          tags (result :tags)]
-      (reset! blog-projects projects)
-      (reset! blog-project (first projects))
-      (reset! lmenuitems labels)
-      (reset! rmenuitems tags))))
+      (get-posts "blog" year month blog-posts))))
 
 
 (defn get-comments [postid comments]
@@ -163,7 +163,7 @@
 
 (defn leftmenubtn
   "returns a side menu button component with the proper contents for given label"
-  [[index label] blog-months blog-posts blog-projects]
+  [[index label] blog-months blog-posts]
   (let [selecteditem (atom nil)
         ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) -2))
@@ -181,17 +181,16 @@
         {:id "leftmenubtn"
          :class "leftmenubtn"
          :style {:transform (str "translate(" @pos-spring "px)")
-                 :background (if (= (mod index 2) 0) "#9dfc92" "#4ff05a")
-                 }
+                 :background (if (= (mod index 2) 0) "#9dfc92" "#4ff05a")}
          :on-click (fn [e]
                      (reset! pos 40)
                      (reset! selecteditem label)
                      (cond
                        (= @selectedpage "blog")
                        (let [[year month] (nth @blog-months index)] 
-                         (get-posts year month blog-posts))
+                         (get-posts-by-date year month "blog" blog-posts))
                        (= @selectedpage "games")
-                       (let [project (nth @blog-projects index)]
+                       (let [project (nth @blog-posts index)]
                          (reset! blog-project project))))
          }
         label]
@@ -200,7 +199,7 @@
 
 
 (defn leftmenu
-  [lmenuitems blog-months blog-posts blog-projects]
+  [lmenuitems blog-months blog-posts]
   (fn a-leftmenu []
     (let [items @lmenuitems]
       (if items
@@ -211,7 +210,7 @@
                  :top "200px"
                  :left "-180px"}}
          [:div {:class "leftmenubody"}
-          (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts blog-projects)]) (map-indexed vector items))]]))))
+          (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts)]) (map-indexed vector items))]]))))
 
 
 (defn impressum []
@@ -244,15 +243,8 @@
                        :cursor "pointer"}
                  :class "shwocommentbtn"
                  :on-click (fn []
-                             (cond
-                               (= @selectedpage "blog")
-                               (do
-                                 (reset! page-state :newpost)
-                                 (reset! posttoedit post))
-                               :else
-                               (do
-                                 (reset! page-state :newproject)
-                                 (reset! projecttoedit post))))}
+                             (reset! page-state :newpost)
+                             (reset! posttoedit post))}
            "[Edit post]"])]
        
        (if @showeditor
@@ -362,7 +354,6 @@
 
         blog-months (atom nil)
         blog-posts (atom nil)
-        blog-projects (atom nil)
 
         active (= label (last (@menu-state :newlabels)))
         metrics (get-metrics label)
@@ -389,13 +380,13 @@
         #(when active
            (cond
              (= label "blog")
-             (get-months lmenuitems rmenuitems blog-months blog-posts)
+             (get-months "blog" lmenuitems rmenuitems blog-months blog-posts)
              (= label "games")
-             (get-projects "game" lmenuitems rmenuitems blog-projects)
+             (get-posts "game" lmenuitems rmenuitems blog-posts)
              (= label "apps")
-             (get-projects "app" lmenuitems rmenuitems blog-projects)
+             (get-posts "app" lmenuitems rmenuitems blog-posts)
              (= label "protos")
-             (get-projects "proto" lmenuitems rmenuitems blog-projects)))
+             (get-posts "proto" lmenuitems rmenuitems blog-posts)))
         ]
        ;; pagecard start
        [:div
@@ -412,80 +403,31 @@
                            (reset! rmenuitems nil)
                            (reset! blog-months nil)
                            (reset! blog-posts nil)
-                           (reset! blog-projects nil)
                            (reset! selectedpage label)
                            (let [new-state (concat (filter #(not= % label) (@menu-state :newlabels)) [label])]
                              (swap! menu-state assoc :oldlabels (@menu-state :newlabels))
                              (swap! menu-state assoc :newlabels new-state)))}
          label]
         ;;pagecard submenu
-        (if active [leftmenu lmenuitems blog-months blog-posts blog-projects])
+        (if active [leftmenu lmenuitems blog-months blog-posts])
         (if active [rightmenu rmenuitems])
         ;;pagecard content
         (cond
           (and active (= label "blog")) [content-posts blog-posts]
-          (and active (= label "apps")) [content-projects "apps" blog-projects]
-          (and active (= label "games")) [content-projects "games" blog-projects]
-          (and active (= label "protos")) [content-projects "protos" blog-projects])
+          (and active (= label "apps")) [content-projects "apps" blog-posts]
+          (and active (= label "games")) [content-projects "games" blog-posts]
+          (and active (= label "protos")) [content-projects "protos" blog-posts])
         [:br]
         ;;impressum
-        (if (or @blog-posts @blog-projects)
+        (if (or @blog-posts)
           [impressum])
         ]])))
-
-
-(defn newproject []
-  (let [title (clojure.core/atom (if @projecttoedit (@projecttoedit :title) "title"))
-        tags (clojure.core/atom (if @projecttoedit (@projecttoedit :tags) "tags,tags"))
-        type (clojure.core/atom (if @projecttoedit (@projecttoedit :type) "type" ))
-        content (clojure.core/atom (if @projecttoedit (@projecttoedit :content) "content"))
-        url (if @projecttoedit "http://localhost:3000/updateproject" "http://localhost:3000/newproject")]
-    [:div {:style {:position "absolute" :width "100%"}}
-     [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
-     [:input {:default-value @title
-              :style {:width "300px"
-                      :display "block"
-                      :margin-left "auto"
-                      :margin-right "auto"}
-              :on-change #(reset! title (-> % .-target .-value))}]
-     [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Tags"]
-     [:input {:default-value @tags
-              :style {:width "200px"
-                      :display "block"
-                      :margin-left "auto"
-                      :margin-right "auto"}
-            :on-change #(reset! tags (-> % .-target .-value))}]
-     [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Type"]
-     [:input {:default-value @type
-              :style {:width "300px"
-                      :display "block"
-                      :margin-left "auto"
-                      :margin-right "auto"}
-              :on-change #(reset! type (-> % .-target .-value))}]
-     [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Content"]
-     [:textarea {:default-value @content
-                 :style {:width "100%" :height "500px"}
-                 :on-change #(reset! content (-> % .-target .-value))}]
-     [:div {:style {:cursor "pointer" :width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}
-            :on-click (fn [event]
-                        (println @title @tags @type @content)
-                        ((fn []
-                           (async/go
-                             (let [{:keys [status body]} (async/<! (http/post url {:form-params {:id (@projecttoedit :id)
-                                                                                                 :title @title
-                                                                                                 :tags @tags
-                                                                                                 :type @type
-                                                                                                 :content @content
-                                                                                                 :pass @pass }}))
-                                   result (js->clj (.parse js/JSON body) :keywordize-keys true)
-                                   status (result :result)]
-                               (println "status" result ))))))
-                        } "Send"]]))
 
 
 (defn newpost []
   (let [title (clojure.core/atom (if @posttoedit (@posttoedit :title) "title"))
         date (clojure.core/atom (if @posttoedit (str (@posttoedit :date) "T00:00:00") "2017-07-30T00:00:00" ))
+        type (clojure.core/atom (if @posttoedit (@posttoedit :type) "type"))
         tags (clojure.core/atom (if @posttoedit (@posttoedit :tags) "tags,tags"))
         content (clojure.core/atom (if @posttoedit (@posttoedit :content) "content"))
         url (if @posttoedit "http://localhost:3000/updatepost" "http://localhost:3000/newpost")]
@@ -511,6 +453,13 @@
                     :margin-left "auto"
                     :margin-right "auto"}
             :on-change #(reset! tags (-> % .-target .-value))}]
+   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Type"]
+   [:input {:default-value @type
+            :style {:width "300px"
+                    :display "block"
+                    :margin-left "auto"
+                    :margin-right "auto"}
+            :on-change #(reset! type (-> % .-target .-value))}]
    [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Post"]
    [:textarea {:default-value @content
                :style {:width "100%" :height "500px"}
@@ -523,6 +472,7 @@
                                 (async/<! (http/post url {:form-params {:title @title
                                                                         :date @date
                                                                         :tags @tags
+                                                                        :type @type
                                                                         :content @content
                                                                         :pass @pass
                                                                         :id (@posttoedit :id)}}))
@@ -549,8 +499,6 @@
      (cond
        (= @page-state :newpost)
        [newpost]
-       (= @page-state :newproject)
-       [newproject]
        :else
        [:div {:id "pagecompbody"}      
         (map (fn [label] ^{:key label} [(pagecard label)]) (@menu-state :newlabels))])
@@ -566,8 +514,6 @@
                  :type "password" }]
         [:div {:class "adminbutton"
                :on-click (fn [e] (reset! page-state :newpost))} "add post"]
-        [:div {:class "adminbutton"
-               :on-click (fn [e] (reset! page-state :newproject))} "add project"]
         [:div {:class "adminbutton"
                :on-click (fn [e] (reset! page-state :normal))} "return"]])]))
 
