@@ -184,6 +184,24 @@
           conn (d/connect uri)
           db (d/db conn)
           resp (d/transact conn data)]
+      (println "resp" resp)
+      "OK")
+    "Invalid password"
+    ))
+
+(defn update-project [pass id title tags type content]
+  (println "update project" pass title tags type content)
+  (if (password/check pass epass)
+    (let [data [{:db/id id
+                 :project/title title ;; "Termite 3D"
+                 :project/tags (clojure.string/split tags #",")
+                 :project/type type ;; "game" 
+                 :project/content content ;; "Egy kurva jo jatek"
+                 }]
+          conn (d/connect uri)
+          db (d/db conn)
+          resp (d/transact conn data)]
+      (println "resp" resp)
       "OK")
     "Invalid password"
     ))
@@ -205,15 +223,18 @@
 
 (defn add-comment [postid nick content code]
   (println "add-comment" postid nick content code)
-  (let [data [{:comment/postid postid
-               :comment/content content ;; "Faszasag!!!"
-               :comment/nick nick ;; "milgra@milgra.com"
-               :comment/date (new java.util.Date)
-               }]
-        conn (d/connect uri)
-        resp (d/transact conn data)]
-    (println "resp" resp)
-    "OK"))
+  (if (and postid nick content code)
+    (let [data [{:comment/postid postid
+                 :comment/content content ;; "Faszasag!!!"
+                 :comment/nick nick ;; "milgra@milgra.com"
+                 :comment/date (new java.util.Date)
+                 }]
+          conn (d/connect uri)
+          resp (d/transact conn data)]
+      (println "resp" resp)
+      "OK"))
+  "Invalid parameters"
+  )
 
 (defn remove-comment [commentid pass]
   (if (password/check pass epass)
@@ -231,6 +252,7 @@
     (-> ips (clojure.string/split #",") first)
     (:remote-addr req)))
 
+
 (defroutes app-routes
   (GET "/" [] "BLANK")
   (GET "/months" [] (json/write-str {:months (get-post-months)
@@ -238,12 +260,13 @@
   (GET "/posts" [year month] (json/write-str {:posts (get-posts-for-month (Integer/parseInt year) (Integer/parseInt month))}))
   (GET "/comments" [postid] (json/write-str {:comments (get-post-comments (Long/parseLong postid))}))
   (GET "/projects" [type] (json/write-str {:projects (get-projects type)
-                                          :tags (get-project-tags type)}))
+                                           :tags (get-project-tags type)}))
   (GET "/newcomment" [postid nick text code] (json/write-str {:result (add-comment (Long/parseLong postid) nick text code)}))
   (GET "/delcomment" [commid pass] (json/write-str {:result (remove-comment (Long/parseLong commid) pass)}))
   (POST "/newproject" [pass title tags type content] (json/write-str {:result (add-project pass title tags type content)}))
   (POST "/newpost" [pass title date tags content] (json/write-str {:result (add-post pass title date tags content)}))
-  (POST "/updatepost" [pass postid title date tags content] (json/write-str {:result (update-post pass (Long/parseLong postid) title date tags content)}))
+  (POST "/updatepost" [pass id title date tags content] (json/write-str {:result (update-post pass (Long/parseLong id) title date tags content)}))
+  (POST "/updateproject" [pass id title tags type content] (json/write-str {:result (update-project pass (Long/parseLong id) title tags type content)}))
   
   (route/resources "/")
   (route/not-found "Not Found"))

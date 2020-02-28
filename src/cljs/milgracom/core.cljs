@@ -23,6 +23,8 @@
 (defonce mode-admin (atom false))
 (defonce pass (atom nil))
 (defonce posttoedit (atom nil))
+(defonce projecttoedit (atom nil))
+(defonce blog-project (atom nil))
 
 (defn get-posts [year month blog-posts]
   (async/go
@@ -56,10 +58,11 @@
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/projects"
                                                     {:query-params {:type type}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
-          projects (result :projects)
+          projects (map first (result :projects))
           labels (map #(% :title) projects)
           tags (result :tags)]
       (reset! blog-projects projects)
+      (reset! blog-project (first projects))
       (reset! lmenuitems labels)
       (reset! rmenuitems tags))))
 
@@ -160,7 +163,7 @@
 
 (defn leftmenubtn
   "returns a side menu button component with the proper contents for given label"
-  [[index label] blog-months blog-posts postpos]
+  [[index label] blog-months blog-posts blog-projects]
   (let [selecteditem (atom nil)
         ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) -2))
@@ -187,7 +190,9 @@
                        (= @selectedpage "blog")
                        (let [[year month] (nth @blog-months index)] 
                          (get-posts year month blog-posts))
-                     ))
+                       (= @selectedpage "games")
+                       (let [project (nth @blog-projects index)]
+                         (reset! blog-project project))))
          }
         label]
        [:div {:id "leftmenubottom"
@@ -195,7 +200,7 @@
 
 
 (defn leftmenu
-  [lmenuitems blog-months blog-posts postpos]
+  [lmenuitems blog-months blog-posts blog-projects]
   (fn a-leftmenu []
     (let [items @lmenuitems]
       (if items
@@ -206,7 +211,7 @@
                  :top "200px"
                  :left "-180px"}}
          [:div {:class "leftmenubody"}
-          (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts postpos)]) (map-indexed vector items))]]))))
+          (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts blog-projects)]) (map-indexed vector items))]]))))
 
 
 (defn impressum []
@@ -239,8 +244,15 @@
                        :cursor "pointer"}
                  :class "shwocommentbtn"
                  :on-click (fn []
-                             (reset! page-state :newpost)
-                             (reset! posttoedit post))}
+                             (cond
+                               (= @selectedpage "blog")
+                               (do
+                                 (reset! page-state :newpost)
+                                 (reset! posttoedit post))
+                               :else
+                               (do
+                                 (reset! page-state :newproject)
+                                 (reset! projecttoedit post))))}
            "[Edit post]"])]
        
        (if @showeditor
@@ -292,25 +304,27 @@
 
 
 (defn content-projects
-  [type blog-projects]
-  (let [projects @blog-projects]
-    (if projects
-      [:div
-       (map (fn [project]
-              [:div
-               {:key (rand 1000000)
-                :id "a-content"
-                :class "content"}
-               ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
-               (project :title)
-               [:br]
-               (project :type)
-               [:br]
-               (str (project :tags))
-               [:br]
-               (m/component (m/md->hiccup (project :content)))
-               ])
-            projects)])))
+  []
+  (if @blog-project
+    (fn []
+      [:div {:id "a-content"
+             :class "content"}
+       [:div {:style {:border-radius "10px"
+                      :height "100%"}}
+        (let [showcomments (atom false)
+              showeditor (atom false)
+              comms (atom nil)]
+          [:div {:key (rand 1000000)}
+           ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
+           [:h1 (@blog-project :title)]
+           [:h2 (clojure.string/join "," (@blog-project :tags))]
+           (m/component (m/md->hiccup (@blog-project :content)))
+           [:br]
+           [comments @blog-project comms showcomments showeditor]
+           [:br]
+           [:hr]
+           [:br]
+           ])]])))
 
 
 (defn content-posts
@@ -320,7 +334,7 @@
       [:div {:id "a-content"
              :class "content"}
        [:div {:style {:border-radius "10px"
-                        :height "100%"}}
+                      :height "100%"}}
         (map (fn [post]
                (let [showcomments (atom false)
                      showeditor (atom false)
@@ -405,7 +419,7 @@
                              (swap! menu-state assoc :newlabels new-state)))}
          label]
         ;;pagecard submenu
-        (if active [leftmenu lmenuitems blog-months blog-posts])
+        (if active [leftmenu lmenuitems blog-months blog-posts blog-projects])
         (if active [rightmenu rmenuitems])
         ;;pagecard content
         (cond
@@ -421,49 +435,60 @@
 
 
 (defn newproject []
-  (let [title (clojure.core/atom nil)
-        tags (clojure.core/atom nil)
-        type (clojure.core/atom nil)
-        content (clojure.core/atom nil)]
+  (let [title (clojure.core/atom (if @projecttoedit (@projecttoedit :title) "title"))
+        tags (clojure.core/atom (if @projecttoedit (@projecttoedit :tags) "tags,tags"))
+        type (clojure.core/atom (if @projecttoedit (@projecttoedit :type) "type" ))
+        content (clojure.core/atom (if @projecttoedit (@projecttoedit :content) "content"))
+        url (if @projecttoedit "http://localhost:3000/updateproject" "http://localhost:3000/newproject")]
     [:div {:style {:position "absolute" :width "100%"}}
      [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
-     [:input {:style {:width "300px"
+     [:input {:default-value @title
+              :style {:width "300px"
                       :display "block"
                       :margin-left "auto"
                       :margin-right "auto"}
               :on-change #(reset! title (-> % .-target .-value))}]
      [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Tags"]
-     [:input {:style {:width "200px"
+     [:input {:default-value @tags
+              :style {:width "200px"
                       :display "block"
                       :margin-left "auto"
                       :margin-right "auto"}
             :on-change #(reset! tags (-> % .-target .-value))}]
      [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Type"]
-     [:input {:style {:width "300px"
+     [:input {:default-value @type
+              :style {:width "300px"
                       :display "block"
                       :margin-left "auto"
                       :margin-right "auto"}
               :on-change #(reset! type (-> % .-target .-value))}]
      [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Content"]
-     [:textarea {:style {:width "100%" :height "500px"}
+     [:textarea {:default-value @content
+                 :style {:width "100%" :height "500px"}
                  :on-change #(reset! content (-> % .-target .-value))}]
      [:div {:style {:cursor "pointer" :width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}
             :on-click (fn [event]
                         (println @title @tags @type @content)
                         ((fn []
                            (async/go
-                             (let [{:keys [status body]} (async/<! (http/post "http://localhost:3000/newproject"
-                                                                              {:form-params {:title @title :tags @tags :type @type :content @content :pass @pass }}))
+                             (let [{:keys [status body]} (async/<! (http/post url {:form-params {:id (@projecttoedit :id)
+                                                                                                 :title @title
+                                                                                                 :tags @tags
+                                                                                                 :type @type
+                                                                                                 :content @content
+                                                                                                 :pass @pass }}))
                                    result (js->clj (.parse js/JSON body) :keywordize-keys true)
                                    status (result :result)]
-                               (println "status" ))))))
+                               (println "status" result ))))))
                         } "Send"]]))
 
+
 (defn newpost []
-  (let [title (clojure.core/atom (@posttoedit :title))
-        date (clojure.core/atom (str (@posttoedit :date) "T00:00:00") )
-        tags (clojure.core/atom (@posttoedit :tags))
-        content (clojure.core/atom (@posttoedit :content))]
+  (let [title (clojure.core/atom (if @posttoedit (@posttoedit :title) "title"))
+        date (clojure.core/atom (if @posttoedit (str (@posttoedit :date) "T00:00:00") "2017-07-30T00:00:00" ))
+        tags (clojure.core/atom (if @posttoedit (@posttoedit :tags) "tags,tags"))
+        content (clojure.core/atom (if @posttoedit (@posttoedit :content) "content"))
+        url (if @posttoedit "http://localhost:3000/updatepost" "http://localhost:3000/newpost")]
   [:div {:style {:position "absolute" :width "100%"}}
    [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
    [:input {:default-value @title
@@ -495,9 +520,12 @@
                       ((fn []
                         (async/go
                           (let [{:keys [status body]}
-                                (async/<! (http/post
-                                           (if @posttoedit "http://localhost:3000/updatepost" "http://localhost:3000/newpost")
-                                           {:form-params {:title @title :date @date :tags @tags :content @content :pass @pass :postid (@posttoedit :id)}}))
+                                (async/<! (http/post url {:form-params {:title @title
+                                                                        :date @date
+                                                                        :tags @tags
+                                                                        :content @content
+                                                                        :pass @pass
+                                                                        :id (@posttoedit :id)}}))
                                 result (js->clj (.parse js/JSON body) :keywordize-keys true)
                                 status (result :result)]
                             (println "status" result)))))

@@ -10,10 +10,12 @@ shadow watch app
 
 todo :
 
-optimiza all queries with post
+project create/edit/display comment number generator
+optimize all queries with pull
 insert go blocks into functions where possible
 break up code, create component namespaces
 rossz code eseten kerje ujra code-ot vagy dobjon napi kvota lejartat
+server csekkoljon minden parametert
 autó backup GitHub
 HETZNER cloud!!!
 "loading" text stylize in html on startup

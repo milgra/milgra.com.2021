@@ -125,13 +125,10 @@
 
 
 (def projects-for-type-q
-  '[:find ?title ?type ?content
-    :keys title type content
+  '[:find (pull ?e [:db/id :project/title :project/content :project/tags :project/type :project/comments])
     :in $ ?wtype
     :where
-    [?e :project/title ?title]
     [?e :project/type ?type]
-    [?e :project/content ?content]
     [(= ?type ?wtype)]])
 
 
