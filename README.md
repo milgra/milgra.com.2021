@@ -10,7 +10,7 @@ shadow watch app
 
 todo :
 
-
+stilusok kivezetese
 insert go blocks into functions where possible
 break up code, create component namespaces
 rossz code eseten kerje ujra code-ot vagy dobjon napi kvota lejartat

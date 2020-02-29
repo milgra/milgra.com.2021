@@ -45,8 +45,7 @@
       (reset! blog-posts posts)
       (reset! blog-project (first posts))
       (reset! lmenuitems labels)
-      (reset! rmenuitems tags)
-      )))
+      (reset! rmenuitems tags))))
 
 
 (defn get-months [type lmenuitems rmenuitems blog-months blog-posts]
@@ -146,11 +145,9 @@
           :style{:background "none"
                  :position "absolute"
                  :top "200px"
-                 :left "700px"
-                 }}
+                 :left "700px"}}
          [:div {:class "leftmenubody"}
-          (map (fn [item] ^{:key item} [(rightmenubtn item)]) (map-indexed vector items))
-          ]]))))
+          (map (fn [item] ^{:key item} [(rightmenubtn item)]) (map-indexed vector items))]]))))
 
 
 (defn leftmenubtn
@@ -272,7 +269,7 @@
                           :width "100%"
                           :text-align "center"}
                   :on-click (fn [event]
-                              ((async/go
+                              (async/go
                                 (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/newcomment"
                                                                                 {:query-params {:postid (post :id) :nick @nick :text @text :code @code}}))
                                       result (js->clj (.parse js/JSON body) :keywordize-keys true)
@@ -283,7 +280,7 @@
                                     (do
                                       (get-comments (post :id) comments)
                                       (reset! showcomments true)
-                                      (swap! showeditor not)))))))}
+                                      (swap! showeditor not))))))}
             "Send Comment"]
            ]])
        (if (and @showcomments @comments)
@@ -298,7 +295,7 @@
                    [:div {:style {:cursor "pointer"}
                           :class "showcommentbtn"
                           :on-click (fn [event] (delete-comment (comment :id) @pass ))} "Delete comment"])
-                 [:hr {:style {:width "20%" :background-color "#FFFFFF"}}]
+                 [:hr {:style {:width "20%" :background-color "#000033"}}]
                  ])
               @comments))]))
 
@@ -438,37 +435,25 @@
   (let [title (clojure.core/atom (if @posttoedit (@posttoedit :title) "title"))
         date (clojure.core/atom (if @posttoedit (str (@posttoedit :date) "T00:00:00") "2017-07-30T00:00:00" ))
         type (clojure.core/atom (if @posttoedit (@posttoedit :type) "type"))
-        tags (clojure.core/atom (if @posttoedit (@posttoedit :tags) "tags,tags"))
+        tags (clojure.core/atom (if @posttoedit (clojure.string/join "," (@posttoedit :tags)) "tags,tags"))
         content (clojure.core/atom (if @posttoedit (@posttoedit :content) "content"))
         url (if @posttoedit "http://localhost:3000/updatepost" "http://localhost:3000/newpost")]
   [:div {:style {:position "absolute" :width "100%"}}
    [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
    [:input {:default-value @title
-            :style {:width "300px"
-                    :display "block"
-                    :margin-left "auto"
-                    :margin-right "auto"}
+            :style {:width "300px" :display "block" :margin-left "auto" :margin-right "auto"}
             :on-change #(reset! title (-> % .-target .-value))}]
    [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Date"]
    [:input {:default-value (if @date @date "2015-12-05T00:00:00")
-            :style {:width "200px"
-                    :display "block"
-                    :margin-left "auto"
-                    :margin-right "auto"}
+            :style {:width "200px" :display "block" :margin-left "auto" :margin-right "auto"}
             :on-change #(reset! date (-> % .-target .-value))}]
    [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Tags"]
    [:input {:default-value @tags
-            :style {:width "300px"
-                    :display "block"
-                    :margin-left "auto"
-                    :margin-right "auto"}
+            :style {:width "300px" :display "block" :margin-left "auto" :margin-right "auto"}
             :on-change #(reset! tags (-> % .-target .-value))}]
    [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Type"]
    [:input {:default-value @type
-            :style {:width "300px"
-                    :display "block"
-                    :margin-left "auto"
-                    :margin-right "auto"}
+            :style {:width "300px" :display "block" :margin-left "auto" :margin-right "auto"}
             :on-change #(reset! type (-> % .-target .-value))}]
    [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Post"]
    [:textarea {:default-value @content
@@ -476,19 +461,18 @@
                :on-change #(reset! content (-> % .-target .-value))}]
    [:div {:style {:cursor "pointer" :width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}
           :on-click (fn [event]
-                      ((fn []
                         (async/go
                           (let [{:keys [status body]}
                                 (async/<! (http/post url {:form-params {:title @title
                                                                         :date @date
-                                                                        :tags @tags
+                                                                        :tags (clojure.string/split @tags #",")
                                                                         :type @type
                                                                         :content @content
                                                                         :pass @pass
                                                                         :id (@posttoedit :id)}}))
                                 result (js->clj (.parse js/JSON body) :keywordize-keys true)
                                 status (result :result)]
-                            (println "status" result)))))
+                            (if (not= status "OK") (js/alert status))))
                       )} "Send"]]))
 
 

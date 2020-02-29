@@ -98,7 +98,7 @@
         tags (d/q db/all-post-tags-by-type-q db dbtype)]
     (reduce (fn [res item] (into res ((first item) :post/tags)) ) #{} tags)))
 
-;;(get-post-tags "blog")
+(get-post-tags "blog")
 
 (defn get-posts-for-month
   "get all posts for given year and month"
@@ -152,7 +152,7 @@
     (let [dbtype (keyword type)
           data [{:post/title title
                  :post/type dbtype
-                 :post/tags (if (= (type tags) "java.lang.String") (clojure.string/split tags #",") tags)
+                 :post/tags tags
                  :post/date (clojure.instant/read-instant-date date)
                  :post/content content
                  }]
@@ -166,15 +166,16 @@
 
 (defn update-post
   "update post in database"
-  [pass id title date tags type content]
+  [pass id title date tags typestr content]
+  (println id title date tags typestr content (type (tags 0)))
   ;; todo check input validity
   (if (password/check pass epass)
-    (let [dbtype (keyword type)
+    (let [dbtype (keyword typestr)
           dbid (Long/parseLong id)
-          data [{:db/id id
+          data [{:db/id dbid
                  :post/title title
                  :post/type dbtype
-                 :post/tags (if (= (type tags) "java.lang.String") (clojure.string/split tags #",") tags)
+                 :post/tags tags
                  :post/date (clojure.instant/read-instant-date date)
                  :post/content content
                  }]
@@ -207,6 +208,18 @@
     "Invalid parameters"))
 
 
+(defn remove-comment
+  "retracts comment from database"
+  [pass id]
+  (if (password/check pass epass)
+    (let [dbid (Long/parseLong id)
+          conn (d/connect uri)
+          resp (d/transact conn [[:db.fn/retractEntity dbid]])]
+      (println "resp" resp)
+      "OK")
+    "Invalid pass"))
+
+
 (defn generate-riddle
   "generates riddle to filter bots for commenting"
   [ip]
@@ -222,17 +235,6 @@
     (str "How much is " namea " plus " nameb "?")))
 
 ;; (generate-riddle "156.45.67.66")  TODO move this to tests
-
-(defn remove-comment
-  "retracts comment from database"
-  [pass id]
-  (if (password/check pass epass)
-    (let [dbid (Long/parseLong id)
-          conn (d/connect uri)
-          resp (d/transact conn [[:db.fn/retractEntity dbid]])]
-      (println "resp" resp)
-      "OK")
-    "Invalid pass"))
 
 
 (defroutes app-routes
