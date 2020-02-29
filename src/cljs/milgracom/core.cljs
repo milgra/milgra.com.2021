@@ -45,7 +45,8 @@
       (reset! blog-posts posts)
       (reset! blog-project (first posts))
       (reset! lmenuitems labels)
-      (reset! rmenuitems tags))))
+      (reset! rmenuitems tags)
+      )))
 
 
 (defn get-months [type lmenuitems rmenuitems blog-months blog-posts]
@@ -64,7 +65,7 @@
       (reset! blog-months months)
       (reset! lmenuitems labels)
       (reset! rmenuitems tags)
-      (get-posts "blog" year month blog-posts))))
+      (get-posts-by-date year month "blog" blog-posts))))
 
 
 (defn get-comments [postid comments]
@@ -75,15 +76,6 @@
           ncomments (result :comments)]
       (reset! comments ncomments))))
 
-
-(defn send-comment [postid comments nick text code]
-  (async/go
-    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/newcomment"
-                                                    {:query-params {:postid postid :nick nick :text text :code code}}))
-          result (js->clj (.parse js/JSON body) :keywordize-keys true)
-          status (result :result)]
-      (get-comments postid comments)
-      )))
 
 (defn delete-comment [id pass]
   (async/go
@@ -218,10 +210,10 @@
    "www.milgra.com by Milan Toth | Powered by Clojure and Datomic."])
 
 
-(defn comments [post comments showcomments showeditor]
-  (let [nick (atom nil)
-        text (atom nil)
-        code (atom nil)]
+(defn comments [post comments showcomments showeditor riddle]
+  (let [nick (clojure.core/atom nil)
+        text (clojure.core/atom nil)
+        code (clojure.core/atom nil)]
     ;;(fn []
       [:div
        [:div {:class "comments"}
@@ -236,7 +228,14 @@
         [:div {:style {:padding-left "20px"
                        :cursor "pointer"}
                :class "shwocommentbtn"
-               :on-click (fn [] (swap! showeditor not))}
+               :on-click (fn []
+                           ((fn []
+                              (async/go
+                                (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/genriddle" ))
+                                      result (js->clj (.parse js/JSON body) :keywordize-keys true)
+                                      question (result :question)]
+                                  (swap! showeditor not)
+                                  (reset! riddle question))))))}
          " Post comment"]
         (if @mode-admin
           [:div {:style {:padding-left "20px"
@@ -261,7 +260,7 @@
                                :width "100%"
                                :height "100px"}
                                :on-change #(reset! text (-> % .-target .-value))}]
-           [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "How much is nine multiplied by eight? Use numbers"]
+           [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} @riddle]
            [:input {:style {:width "150px"  
                             :display "block"
                             :margin-left "auto"
@@ -273,8 +272,18 @@
                           :width "100%"
                           :text-align "center"}
                   :on-click (fn [event]
-                              (if @showeditor (send-comment (post :id) comments @nick @text @code))
-                              (swap! showeditor not))}
+                              ((async/go
+                                (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/newcomment"
+                                                                                {:query-params {:postid (post :id) :nick @nick :text @text :code @code}}))
+                                      result (js->clj (.parse js/JSON body) :keywordize-keys true)
+                                      status (result :result)]
+                                  (println "result" result)
+                                  (if (= status "Invalid code")
+                                    (reset! riddle "Invalid result, please try again later")
+                                    (do
+                                      (get-comments (post :id) comments)
+                                      (reset! showcomments true)
+                                      (swap! showeditor not)))))))}
             "Send Comment"]
            ]])
        (if (and @showcomments @comments)
@@ -289,7 +298,6 @@
                    [:div {:style {:cursor "pointer"}
                           :class "showcommentbtn"
                           :on-click (fn [event] (delete-comment (comment :id) @pass ))} "Delete comment"])
-
                  [:hr {:style {:width "20%" :background-color "#FFFFFF"}}]
                  ])
               @comments))]))
@@ -305,6 +313,7 @@
                       :height "100%"}}
         (let [showcomments (atom false)
               showeditor (atom false)
+              riddle (atom nil)
               comms (atom nil)]
           [:div {:key (rand 1000000)}
            ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
@@ -312,7 +321,7 @@
            [:h2 (clojure.string/join "," (@blog-project :tags))]
            (m/component (m/md->hiccup (@blog-project :content)))
            [:br]
-           [comments @blog-project comms showcomments showeditor]
+           [comments @blog-project comms showcomments showeditor riddle]
            [:br]
            [:hr]
            [:br]
@@ -330,6 +339,7 @@
         (map (fn [post]
                (let [showcomments (atom false)
                      showeditor (atom false)
+                     riddle (atom nil)
                      comms (atom nil)]
                  [:div {:key (rand 1000000)}
                   ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
@@ -338,9 +348,9 @@
                   [:h2 (clojure.string/join "," (post :tags))]
                   (m/component (m/md->hiccup (post :content)))
                   [:br]
-                  [comments post comms showcomments showeditor]
+                  [comments post comms showcomments showeditor riddle]
                   [:br]
-                  [:hr]
+                  [:div {:class "horline"}]
                   [:br]
                   ]))
              @blog-posts)]])))

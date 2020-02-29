@@ -1,9 +1,10 @@
 (ns milgracom.handler
-  (:require [compojure.core :refer :all]
-            [compojure.route :as route]
-            [milgracom.database :as db]
-            [clojure.data.json :as json]
+  (:require
             [datomic.api :as d]
+            [compojure.core :refer :all]
+            [compojure.route :as route]
+            [clojure.data.json :as json]
+            [milgracom.database :as db]
             [crypto.password.pbkdf2 :as password]
             [ring.util.response :as resp]
             [ring.middleware.cors :refer [wrap-cors]]
@@ -55,7 +56,9 @@
       (println "db exists"))))
 
 
-(defn delete []
+(defn delete
+  "delete database"
+  []
   (let [succ (d/delete-database uri)]
     (println "delete" succ)))
 
@@ -76,18 +79,13 @@
 (defn get-post-months
   "get all months where posts exist"
   [type]
-  (println "type" type)
   (let [dbtype (keyword type)
         conn (d/connect uri)
         db (d/db conn)
         dates (d/q db/all-post-months-by-type-q db dbtype)]
-    (println "dates" dates)
-    (reverse
-     (sort
-      (set
-       (map (fn [[{date :post/date}]]
-              [(+ 1900 (.getYear date)) (inc (.getMonth date))])
-            dates))))))
+    (reverse (sort (set (map
+                         (fn [[{date :post/date}]] [(+ 1900 (.getYear date)) (inc (.getMonth date))])
+                         dates))))))
 
 ;;(get-post-months "blog")
 
@@ -141,22 +139,22 @@
         conn (d/connect uri)
         db (d/db conn)
         comments (d/q db/comments-for-post-q db dbpostid)]
-    (println "res" comments)
-    (map (fn [[{date :comment/date :as val}]]
+    (reverse (map (fn [[{date :comment/date :as val}]]
            (assoc val :comment/date (.format (java.text.SimpleDateFormat. "yyyy-dd-MM") date)))
-    comments)))
+    comments))))
 
 ;;(get-post-comments 17592186045425)
 
-(defn add-post [pass title date tags type content]
-  (println "add post" pass title date tags content)
+(defn add-post
+  "add post to database"
+  [pass title date tags type content]
   (if (password/check pass epass)
     (let [dbtype (keyword type)
-          data [{:post/title title ;;"Első post"
+          data [{:post/title title
                  :post/type dbtype
                  :post/tags (if (= (type tags) "java.lang.String") (clojure.string/split tags #",") tags)
-                 :post/date (clojure.instant/read-instant-date date) ;; #inst "2015-12-05T00:00:00" 
-                 :post/content content ;; "<h>Ehun egy html.<br>Ehun meg egy</h>"}]
+                 :post/date (clojure.instant/read-instant-date date)
+                 :post/content content
                  }]
           conn (d/connect uri)
           db (d/db conn)
@@ -166,18 +164,19 @@
     "Invalid pass"))
 
 
-(defn update-post [pass id title date tags type content]
-  (println "add post" pass title date tags content)
+(defn update-post
+  "update post in database"
+  [pass id title date tags type content]
   ;; todo check input validity
   (if (password/check pass epass)
     (let [dbtype (keyword type)
           dbid (Long/parseLong id)
           data [{:db/id id
-                 :post/title title ;;"Első post"
+                 :post/title title
                  :post/type dbtype
                  :post/tags (if (= (type tags) "java.lang.String") (clojure.string/split tags #",") tags)
-                 :post/date (clojure.instant/read-instant-date date) ;; #inst "2015-12-05T00:00:00" 
-                 :post/content content ;; "<h>Ehun egy html.<br>Ehun meg egy</h>"}]
+                 :post/date (clojure.instant/read-instant-date date)
+                 :post/content content
                  }]
           conn (d/connect uri)
           db (d/db conn)
@@ -187,43 +186,46 @@
     "Invalid pass"))
 
 
-(defn add-comment [postid nick content code request]
-  (println "add-comment" postid nick content code)
+(defn add-comment
+  "add comment to database"
+  [postid nick content code request]
   (if (and postid nick content code)
-    (let [clientip (get-client-ip request)
-          checks (filter (fn [{ip :ip result :result}] (and (= ip clientip) (= result code)))  @ip-to-result)]
-          ;; check validity
-          (if (> (count checks) 0)
-            (let [dbpostid (Long/parseLong postid)
-                  data [{:comment/postid dbpostid
-                         :comment/content content ;; "Faszasag!!!"
-                         :comment/nick nick ;; "milgra@milgra.com"
-                         :comment/date (new java.util.Date)}]
-                  conn (d/connect uri)
-                  resp (d/transact conn data)]
-              (println "resp" resp))
-            "Invalid code")
-      "OK"))
-  "Invalid parameters"
-  )
+    (let [numcode (Integer/parseInt code)
+          clientip (get-client-ip request)
+          checks (filter (fn [{ip :ip result :result}] (and (= ip clientip) (= result numcode)))  @ip-to-result)]
+      ;; check validity
+      (if (> (count checks) 0)
+        (let [dbpostid (Long/parseLong postid)
+              data [{:comment/postid dbpostid
+                     :comment/content content
+                     :comment/nick nick
+                     :comment/date (new java.util.Date)}]
+              conn (d/connect uri)
+              resp (d/transact conn data)]
+          "OK")
+        "Invalid code"))
+    "Invalid parameters"))
 
 
-(defn genquestion [ip]
+(defn generate-riddle
+  "generates riddle to filter bots for commenting"
+  [ip]
   (let [numa (rand-int 10)
         numb (rand-int 10)
         namea (nth number-names numa)
         nameb (nth number-names numb)
         items (count @ip-to-result)]
-    (println "genquestion" ip "length items" )
     ;; remove old items to keep memory clean
-    (if (> items 5) (reset! ip-to-result (subvec @ip-to-result (- items 5))))
+    (if (> items 10) (reset! ip-to-result (subvec @ip-to-result (- items 10))))
     ;; add new item
     (swap! ip-to-result conj {:ip ip :result (+ numa numb)})
     (str "How much is " namea " plus " nameb "?")))
 
-;; (genquestion "156.45.67.66")
+;; (generate-riddle "156.45.67.66")  TODO move this to tests
 
-(defn remove-comment [pass id]
+(defn remove-comment
+  "retracts comment from database"
+  [pass id]
   (if (password/check pass epass)
     (let [dbid (Long/parseLong id)
           conn (d/connect uri)
@@ -233,16 +235,16 @@
     "Invalid pass"))
 
 
-
 (defroutes app-routes
-  (GET "/" [] "BLANK")
+
   (GET "/months" [type] (json/write-str {:months (get-post-months type) :tags (get-post-tags type)}))
   (GET "/postsbydate" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
   (GET "/posts" [year month type] (json/write-str {:posts (get-posts-for-type type)}))
   (GET "/comments" [postid] (json/write-str {:comments (get-post-comments postid)}))
-  (GET "/genquestion" request (json/write-str {:question (genquestion (get-client-ip request))}))
+  (GET "/genriddle" request (json/write-str {:question (generate-riddle (get-client-ip request))}))
   (GET "/newcomment" [postid nick text code :as request] (json/write-str {:result (add-comment postid nick text code request)}))
   (GET "/delcomment" [pass id] (json/write-str {:result (remove-comment pass id)}))
+
   (POST "/newpost" [pass title date tags content] (json/write-str {:result (add-post pass title date tags content)}))
   (POST "/updatepost" [pass id title date tags type content] (json/write-str {:result (update-post pass id title date tags type content)}))
   
