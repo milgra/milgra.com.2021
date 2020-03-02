@@ -21,5 +21,5 @@ HETZNER cloud!!!
 "loading" text stylize in html on startup
 szerver nelkul hogy kezeli a site a hibakat?
 heckelest hogy allja a szerver?
-adott post/comment jojjon be ha parametert kap az index.html
+adott post/comment jojjon be ha parametert kap az index.html -> apps linkek mukodjenek
 parameter validity checking (length, year-month format, etc)

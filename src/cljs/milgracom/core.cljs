@@ -31,17 +31,18 @@
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/postsbydate"
                                                     {:query-params {:year year :month month :type type}}))
           posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))]
-      (println "posts " posts)
-      (reset! blog-posts posts))))
+      (reset! blog-posts (reverse posts)))))
 
 
 (defn get-posts [type lmenuitems rmenuitems blog-posts]
+  (println "get-posts" type)
   (async/go
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
                                                     {:query-params {:type type}}))
           posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))
           labels (map #(% :title) posts)
           tags (map #(% :tags) posts)]
+      (println "posts" posts)
       (reset! blog-posts posts)
       (reset! blog-project (first posts))
       (reset! lmenuitems labels)
@@ -59,8 +60,8 @@
                   (fn [res [year month]] (conj res (str (nth monthnames (dec month)) " " year)))
                   []
                   months)
-          [year month] (if (> (count months) 0) (last months))
-          ]
+          [year month] (if (> (count months) 0) (first months))]
+      (println "result" result)
       (reset! blog-months months)
       (reset! lmenuitems labels)
       (reset! rmenuitems tags)
@@ -178,7 +179,7 @@
                        (= @selectedpage "blog")
                        (let [[year month] (nth @blog-months index)] 
                          (get-posts-by-date year month "blog" blog-posts))
-                       (= @selectedpage "games")
+                       :else
                        (let [project (nth @blog-posts index)]
                          (reset! blog-project project))))
          }
@@ -306,7 +307,7 @@
     (fn []
       [:div {:id "a-content"
              :class "content"}
-       [:div {:style {:border-radius "10px"
+       [:div {:style {:border-radius "0px"
                       :height "100%"}}
         (let [showcomments (atom false)
               showeditor (atom false)
@@ -316,7 +317,7 @@
            ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
            [:h1 (@blog-project :title)]
            [:h2 (clojure.string/join "," (@blog-project :tags))]
-           (m/component (m/md->hiccup (@blog-project :content)))
+           (m/component (m/md->hiccup (@blog-project :content) (:encode? true)))
            [:br]
            [comments @blog-project comms showcomments showeditor riddle]
            [:br]
@@ -331,8 +332,6 @@
     (fn []
       [:div {:id "a-content"
              :class "content"}
-       [:div {:style {:border-radius "10px"
-                      :height "100%"}}
         (map (fn [post]
                (let [showcomments (atom false)
                      showeditor (atom false)
@@ -350,7 +349,7 @@
                   [:div {:class "horline"}]
                   [:br]
                   ]))
-             @blog-posts)]])))
+             @blog-posts)])))
 
 
 (defn pagecard
@@ -424,7 +423,6 @@
           (and active (= label "apps")) [content-projects "apps" blog-posts]
           (and active (= label "games")) [content-projects "games" blog-posts]
           (and active (= label "protos")) [content-projects "protos" blog-posts])
-        [:br]
         ;;impressum
         (if (or @blog-posts)
           [impressum])
@@ -433,11 +431,12 @@
 
 (defn newpost []
   (let [title (clojure.core/atom (if @posttoedit (@posttoedit :title) "title"))
-        date (clojure.core/atom (if @posttoedit (str (@posttoedit :date) "T00:00:00") "2017-07-30T00:00:00" ))
+        date (clojure.core/atom (if @posttoedit (str (@posttoedit :date) "T00:00:00") "2010-01-01T10:10:00" ))
         type (clojure.core/atom (if @posttoedit (@posttoedit :type) "type"))
         tags (clojure.core/atom (if @posttoedit (clojure.string/join "," (@posttoedit :tags)) "tags,tags"))
         content (clojure.core/atom (if @posttoedit (@posttoedit :content) "content"))
-        url (if @posttoedit "http://localhost:3000/updatepost" "http://localhost:3000/newpost")]
+        url (if @posttoedit "http://localhost:3000/updatepost" "http://localhost:3000/newpost")
+        id (if @posttoedit (@posttoedit :id) 0)]
   [:div {:style {:position "absolute" :width "100%"}}
    [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
    [:input {:default-value @title
@@ -469,10 +468,12 @@
                                                                         :type @type
                                                                         :content @content
                                                                         :pass @pass
-                                                                        :id (@posttoedit :id)}}))
+                                                                        :id id}}))
                                 result (js->clj (.parse js/JSON body) :keywordize-keys true)
                                 status (result :result)]
-                            (if (not= status "OK") (js/alert status))))
+                            (if (= status "OK")
+                              (reset! page-state :normal))
+                              (js/alert status)))
                       )} "Send"]]))
 
 
@@ -507,7 +508,9 @@
                  :on-change #(reset! pass (-> % .-target .-value))
                  :type "password" }]
         [:div {:class "adminbutton"
-               :on-click (fn [e] (reset! page-state :newpost))} "add post"]
+               :on-click (fn [e]
+                           (reset! posttoedit nil)
+                           (reset! page-state :newpost))} "add post"]
         [:div {:class "adminbutton"
                :on-click (fn [e] (reset! page-state :normal))} "return"]])]))
 

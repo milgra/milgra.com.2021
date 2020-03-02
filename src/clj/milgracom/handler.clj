@@ -16,6 +16,7 @@
 
 (defonce ip-to-result (atom []))
 (defonce number-names ["zero" "one" "two" "three" "four" "five" "six" "seven" "eight" "nine"])
+(defonce types ["blog" "game" "app" "proto"])
 
 
 (defn get-client-ip [req]
@@ -98,7 +99,7 @@
         tags (d/q db/all-post-tags-by-type-q db dbtype)]
     (reduce (fn [res item] (into res ((first item) :post/tags)) ) #{} tags)))
 
-(get-post-tags "blog")
+;;(get-post-tags "blog")
 
 (defn get-posts-for-month
   "get all posts for given year and month"
@@ -113,11 +114,12 @@
         start (clojure.instant/read-instant-date (format "%d-%02d-01T00:00:00" dbyear dbmonth))
         end (clojure.instant/read-instant-date  (format "%d-%02d-01T00:00:00" endyear endmonth))
         posts (d/q db/posts-between-dates-by-type-q db start end dbtype)]
-    (map (fn [[{date :post/date :as val}]]
-           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-dd-MM") date)))
-         posts)))
+    (println "start end" start end)
+    (sort-by :post/date (map (fn [[{date :post/date :as val}]]
+           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd") date)))
+         posts))))
 
-;;(get-posts-for-month 2018 4 "blog")
+;;(sort-by :post/date (get-posts-for-month "2016" "10" "blog"))
 
 (defn get-posts-for-type
   "get all posts for given year and month"
@@ -127,7 +129,7 @@
         db (d/db conn)
         posts (d/q db/all-posts-all-data-by-type-q db dbtype)]
     (map (fn [[{date :post/date :as val}]]
-           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-dd-MM") date)))
+           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd") date)))
          posts)))
 
 ;;(get-posts-for-type "game")
@@ -140,17 +142,40 @@
         db (d/db conn)
         comments (d/q db/comments-for-post-q db dbpostid)]
     (reverse (map (fn [[{date :comment/date :as val}]]
-           (assoc val :comment/date (.format (java.text.SimpleDateFormat. "yyyy-dd-MM") date)))
+           (assoc val :comment/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd") date)))
     comments))))
 
 ;;(get-post-comments 17592186045425)
 
+
 (defn add-post
   "add post to database"
-  [pass title date tags type content]
-  (if (password/check pass epass)
-    (let [dbtype (keyword type)
+  [pass title date tags typestr content]
+  (if (and (password/check pass epass) (some #(= % typestr) types))
+    (let [dbtype (keyword typestr)
           data [{:post/title title
+                 :post/type dbtype
+                 :post/tags tags
+                 :post/date (clojure.instant/read-instant-date date)
+                 :post/content content
+                 }]
+          conn (d/connect uri)
+          db (d/db conn)
+          resp (d/transact conn data)]
+      (println "resp" resp)
+      "OK")
+    "Invalid pass or type"))
+
+
+(defn update-post
+  "update post in database"
+  [pass id title date tags typestr content]
+  ;; todo check input validity
+  (if (and (password/check pass epass) (some #(= % typestr) types))
+    (let [dbtype (keyword typestr)
+          dbid (Long/parseLong id)
+          data [{:db/id dbid
+                 :post/title title
                  :post/type dbtype
                  :post/tags tags
                  :post/date (clojure.instant/read-instant-date date)
@@ -164,24 +189,13 @@
     "Invalid pass"))
 
 
-(defn update-post
-  "update post in database"
-  [pass id title date tags typestr content]
-  (println id title date tags typestr content (type (tags 0)))
-  ;; todo check input validity
+(defn remove-post
+  "retracts post from database"
+  [pass id]
   (if (password/check pass epass)
-    (let [dbtype (keyword typestr)
-          dbid (Long/parseLong id)
-          data [{:db/id dbid
-                 :post/title title
-                 :post/type dbtype
-                 :post/tags tags
-                 :post/date (clojure.instant/read-instant-date date)
-                 :post/content content
-                 }]
+    (let [dbid (Long/parseLong id)
           conn (d/connect uri)
-          db (d/db conn)
-          resp (d/transact conn data)]
+          resp (d/transact conn [[:db.fn/retractEntity dbid]])]
       (println "resp" resp)
       "OK")
     "Invalid pass"))
@@ -238,7 +252,8 @@
 
 
 (defroutes app-routes
-
+  
+  (GET "/" [] (resp/redirect "/index.html"))
   (GET "/months" [type] (json/write-str {:months (get-post-months type) :tags (get-post-tags type)}))
   (GET "/postsbydate" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
   (GET "/posts" [year month type] (json/write-str {:posts (get-posts-for-type type)}))
@@ -247,7 +262,7 @@
   (GET "/newcomment" [postid nick text code :as request] (json/write-str {:result (add-comment postid nick text code request)}))
   (GET "/delcomment" [pass id] (json/write-str {:result (remove-comment pass id)}))
 
-  (POST "/newpost" [pass title date tags content] (json/write-str {:result (add-post pass title date tags content)}))
+  (POST "/newpost" [pass title date tags type content] (json/write-str {:result (add-post pass title date tags type  content)}))
   (POST "/updatepost" [pass id title date tags type content] (json/write-str {:result (update-post pass id title date tags type content)}))
   
   (route/resources "/")

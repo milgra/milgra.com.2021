@@ -98,8 +98,8 @@
     [?e :post/type ?ptype]
     [?e :post/date ?pdate]
     [(= ?ptype ?type)]
-    [(> ?pdate ?start)]
-    [(< ?pdate ?end)]])
+    [(>= ?pdate ?start)]
+    [(<= ?pdate ?end)]])
 
 
 (def all-comments-all-data-q

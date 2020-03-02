@@ -52,7 +52,7 @@ textarea {
     margin : 0px;
     padding-bottom : 10px;
     position : absolute;
-    height : 100vh;
+    height : 99vh;
     box-shadow: 0 0px 20px 0 rgba(0, 0, 0, 0.3);
     display:inline-block;
 }
@@ -161,20 +161,26 @@ textarea {
     width : 100%;
     padding : 40px;
     padding-top : 0px;
+    padding-bottom : 0px;
     color : #000000;
     font-size : 1em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     #display:inline-block;
-    height: 95vh;
+    height: 100%;
     #overflow: auto;
     #3border-radius: 10px;
     overflow-y: scroll;
 }
 
 .impressum {
+    position : absolute;
     color : #000000;
+    background : #4ff55a;
+    padding : 0px;
+    margin : 0px;
     width : 100%;
+    bottom : 0px;
     font-size : 1em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
