@@ -39,10 +39,10 @@
   (async/go
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
                                                     {:query-params {:type type}}))
-          posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))
-          labels (map #(% :title) posts)
-          tags (map #(% :tags) posts)]
-      (println "posts" posts)
+          result (js->clj (.parse js/JSON body) :keywordize-keys true)
+          posts (result :posts)
+          tags (result :tags)
+          labels (map #(% :title) posts)]
       (reset! blog-posts posts)
       (reset! blog-project (first posts))
       (reset! lmenuitems labels)

@@ -256,7 +256,7 @@
   (GET "/" [] (resp/redirect "/index.html"))
   (GET "/months" [type] (json/write-str {:months (get-post-months type) :tags (get-post-tags type)}))
   (GET "/postsbydate" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
-  (GET "/posts" [year month type] (json/write-str {:posts (get-posts-for-type type)}))
+  (GET "/posts" [year month type] (json/write-str {:posts (get-posts-for-type type) :tags (get-post-tags type)}))
   (GET "/comments" [postid] (json/write-str {:comments (get-post-comments postid)}))
   (GET "/genriddle" request (json/write-str {:question (generate-riddle (get-client-ip request))}))
   (GET "/newcomment" [postid nick text code :as request] (json/write-str {:result (add-comment postid nick text code request)}))
