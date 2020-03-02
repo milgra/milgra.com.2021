@@ -8,6 +8,8 @@
             [cljs-http.client :as http]))
 
 
+(defonce server-url "http://116.203.87.141")
+;;(defonce server-url "http://localhost:3000")
 (defonce menu-labels ["blog" "apps" "games" "protos"])
 (defonce menu-colors [0x9dfc92
                       0x4ff05a
@@ -28,7 +30,7 @@
 
 (defn get-posts-by-date [year month type blog-posts]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/postsbydate"
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/postsbydate")
                                                     {:query-params {:year year :month month :type type}}))
           posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))]
       (reset! blog-posts (reverse posts)))))
@@ -36,12 +38,12 @@
 
 (defn get-posts [type lmenuitems rmenuitems blog-posts]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/posts")
                                                     {:query-params {:type type}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
-          posts (result :posts)
+          posts (reverse (result :posts))
           tags (result :tags)
-          labels (map #(% :title) (reverse posts))]
+          labels (map #(% :title) posts)]
       (reset! blog-posts posts)
       (reset! lmenuitems labels)
       (reset! rmenuitems tags))))
@@ -49,7 +51,7 @@
 
 (defn get-months [type lmenuitems rmenuitems blog-months blog-posts]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/months"
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/months")
                                                     {:query-params {:type type}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           months (result :months)
@@ -67,7 +69,7 @@
 
 (defn get-comments [postid comments]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/comments"
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/comments")
                                                     {:query-params {:postid postid}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           ncomments (result :comments)]
@@ -76,7 +78,7 @@
 
 (defn delete-comment [id pass]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/delcomment"
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/delcomment")
                                                     {:query-params {:commid id :pass pass}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           status (result :result)]
@@ -108,7 +110,7 @@
         ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) 2))
         ;; spring animators 
-        pos-spring (anim/spring pos {:mass 15.0 :stiffness 0.5 :damping 3.0})
+        pos-spring (anim/spring pos {:mass 5.0 :stiffness 0.5 :damping 3.0})
         newpos (if (= @selecteditem label) 40 30)]
     (fn a-leftmenubtn []
       [:div {:class "a-leftmenubtn"}
@@ -155,7 +157,7 @@
         ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) -2))
         ;; spring animators 
-        pos-spring (anim/spring pos {:mass 15.0 :stiffness 0.5 :damping 3.0})
+        pos-spring (anim/spring pos {:mass 5.0 :stiffness 0.5 :damping 3.0})
         newpos (if (= @selecteditem label) 40 30)]
     (fn a-leftmenubtn []
       [:div {:class "a-leftmenubtn"}
@@ -193,7 +195,7 @@
       (if items
         [:div
          [anim/timeline
-         (+ 1000 (* 50 (count @lmenuitems)))
+         (+ 500 (* 50 (count @lmenuitems)))
           #(cond
              (= @selectedpage "blog")
              (let [[year month] (first @blog-months)] 
@@ -237,7 +239,7 @@
                :on-click (fn []
                            ((fn []
                               (async/go
-                                (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/genriddle" ))
+                                (let [{:keys [status body]} (async/<! (http/get (str server-url "/genriddle")))
                                       result (js->clj (.parse js/JSON body) :keywordize-keys true)
                                       question (result :question)]
                                   (swap! showeditor not)
@@ -279,7 +281,7 @@
                           :text-align "center"}
                   :on-click (fn [event]
                               (async/go
-                                (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/newcomment"
+                                (let [{:keys [status body]} (async/<! (http/get (str server-url "/newcomment")
                                                                                 {:query-params {:postid (post :id) :nick @nick :text @text :code @code}}))
                                       result (js->clj (.parse js/JSON body) :keywordize-keys true)
                                       status (result :result)]
@@ -329,7 +331,7 @@
            [:br]
            [comments @blog-project comms showcomments showeditor riddle]
            [:br]
-           [:hr]
+           [:div {:class "horline"}]
            [:br]
            ])]])))
 
@@ -444,7 +446,7 @@
         type (clojure.core/atom (if @posttoedit (@posttoedit :type) "type"))
         tags (clojure.core/atom (if @posttoedit (clojure.string/join "," (@posttoedit :tags)) "tags,tags"))
         content (clojure.core/atom (if @posttoedit (@posttoedit :content) "content"))
-        url (if @posttoedit "http://localhost:3000/updatepost" "http://localhost:3000/newpost")
+        url (if @posttoedit (str server-url "/updatepost") (str server-url "/newpost"))
         id (if @posttoedit (@posttoedit :id) 0)]
   [:div {:style {:position "absolute" :width "100%"}}
    [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]

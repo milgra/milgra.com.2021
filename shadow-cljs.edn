@@ -19,7 +19,7 @@
         :modules
         {:main
          {:entries [milgracom.core]}}
-
+        :release {:compiler-options {:optimizations :simple :infer-externs :auto}}
         :devtools
         ;; before live-reloading any code call this function
         {:before-load milgracom.core/stop
