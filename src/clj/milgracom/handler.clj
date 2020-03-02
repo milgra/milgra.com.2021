@@ -5,14 +5,15 @@
             [compojure.route :as route]
             [clojure.data.json :as json]
             [milgracom.database :as db]
-            [crypto.password.pbkdf2 :as password]
+            [crypto.password.scrypt :as password]
             [ring.util.response :as resp]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]))
 
 
-(def uri "datomic:dev://localhost:4334/milgracom")
-(def epass "AYag$X5r8CmDjJOQ=$uDGDAgnDrf3Gju5pPq9bTWWpsMc=")
+(defonce uri "datomic:dev://localhost:4334/milgracom")
+(defonce epass "$s0$f0801$ltUrt7mIR8BW90xbCpGe0Q==$sxNuunkgX7GuXuzjAEUXPUqVIq0U00CRUxJFG9MyP30=")
+;;(password/encrypt "password")
 
 (defonce ip-to-result (atom []))
 (defonce number-names ["zero" "one" "two" "three" "four" "five" "six" "seven" "eight" "nine"])

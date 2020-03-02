@@ -64,8 +64,7 @@
       (println "result" result)
       (reset! blog-months months)
       (reset! lmenuitems labels)
-      (reset! rmenuitems tags)
-      (get-posts-by-date year month "blog" blog-posts))))
+      (reset! rmenuitems tags))))
 
 
 (defn get-comments [postid comments]
@@ -117,7 +116,7 @@
       [:div {:class "a-leftmenubtn"}
        ;; animation structure
        [anim/timeline
-        (+ 450 (* 100 index))
+        (* 40 index)
         #(reset! pos newpos)]
        ;; menucard start
        [:div
@@ -164,7 +163,7 @@
       [:div {:class "a-leftmenubtn"}
        ;; animation structure
        [anim/timeline
-        (* 100 index)
+        (* 50 index)
         #(reset! pos newpos)]
        ;; menucard start
        [:div
@@ -191,17 +190,22 @@
 (defn leftmenu
   [lmenuitems blog-months blog-posts]
   (fn a-leftmenu []
-    (let [items @lmenuitems]
+    (let [items @lmenuitems
+          [year month] (first @blog-months)] 
       (if items
         [:div
-         {:id "leftmenu"
-          :style{:background "none"
-                 :position "absolute"
-                 :top "200px"
-                 :left "-180px"}}
-         [:div {:class "leftmenubody"}
-          (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts)]) (map-indexed vector items))]]))))
-
+         [anim/timeline
+         (+ 1000 (* 50 (count @lmenuitems)))
+          #(get-posts-by-date year month "blog" blog-posts)]
+         [:div
+          {:id "leftmenu"
+           :style{:background "none"
+                  :position "absolute"
+                  :top "200px"
+                  :left "-180px"}}
+          [:div {:class "leftmenubody"}
+           (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts)]) (map-indexed vector items))]]]))))
+  
 
 (defn impressum []
   [:div {:class "impressum"}
@@ -409,6 +413,7 @@
                            (reset! rmenuitems nil)
                            (reset! blog-months nil)
                            (reset! blog-posts nil)
+                           (reset! blog-project nil)
                            (reset! selectedpage label)
                            (let [new-state (concat (filter #(not= % label) (@menu-state :newlabels)) [label])]
                              (swap! menu-state assoc :oldlabels (@menu-state :newlabels))
