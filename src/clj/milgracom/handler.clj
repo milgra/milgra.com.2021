@@ -115,9 +115,8 @@
         start (clojure.instant/read-instant-date (format "%d-%02d-01T00:00:00" dbyear dbmonth))
         end (clojure.instant/read-instant-date  (format "%d-%02d-01T00:00:00" endyear endmonth))
         posts (d/q db/posts-between-dates-by-type-q db start end dbtype)]
-    (println "start end" start end)
     (sort-by :post/date (map (fn [[{date :post/date :as val}]]
-           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd") date)))
+           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss") date)))
          posts))))
 
 ;;(sort-by :post/date (get-posts-for-month "2016" "10" "blog"))
@@ -129,11 +128,12 @@
         conn (d/connect uri)
         db (d/db conn)
         posts (d/q db/all-posts-all-data-by-type-q db dbtype)]
-    (map (fn [[{date :post/date :as val}]]
-           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd") date)))
-         posts)))
+    (sort-by :post/date (map (fn [[{date :post/date :as val}]]
+           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss") date)))
+         posts))))
 
 ;;(get-posts-for-type "game")
+;;(str #inst "2019-12-30T01:01:01")
 
 (defn get-post-comments
   "returns comments for give post id"
@@ -143,7 +143,7 @@
         db (d/db conn)
         comments (d/q db/comments-for-post-q db dbpostid)]
     (reverse (map (fn [[{date :comment/date :as val}]]
-           (assoc val :comment/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd") date)))
+           (assoc val :comment/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss") date)))
     comments))))
 
 ;;(get-post-comments 17592186045425)
@@ -163,7 +163,6 @@
           conn (d/connect uri)
           db (d/db conn)
           resp (d/transact conn data)]
-      (println "resp" resp)
       "OK")
     "Invalid pass or type"))
 
@@ -185,7 +184,6 @@
           conn (d/connect uri)
           db (d/db conn)
           resp (d/transact conn data)]
-      (println "resp" resp)
       "OK")
     "Invalid pass"))
 
@@ -197,7 +195,6 @@
     (let [dbid (Long/parseLong id)
           conn (d/connect uri)
           resp (d/transact conn [[:db.fn/retractEntity dbid]])]
-      (println "resp" resp)
       "OK")
     "Invalid pass"))
 
@@ -230,7 +227,6 @@
     (let [dbid (Long/parseLong id)
           conn (d/connect uri)
           resp (d/transact conn [[:db.fn/retractEntity dbid]])]
-      (println "resp" resp)
       "OK")
     "Invalid pass"))
 

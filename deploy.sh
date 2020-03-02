@@ -1,3 +1,5 @@
+lein uberjar
+
 rsync -v -r -e ssh datomic-pro-0.9.6024/ root@80.211.79.127:/root
 rsync -v -r -e ssh milgra.com.server-0.1.0-SNAPSHOT-standalone.jar root@80.211.79.127:/root 
 

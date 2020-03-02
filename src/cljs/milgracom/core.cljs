@@ -35,16 +35,14 @@
 
 
 (defn get-posts [type lmenuitems rmenuitems blog-posts]
-  (println "get-posts" type)
   (async/go
     (let [{:keys [status body]} (async/<! (http/get "http://localhost:3000/posts"
                                                     {:query-params {:type type}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           posts (result :posts)
           tags (result :tags)
-          labels (map #(% :title) posts)]
+          labels (map #(% :title) (reverse posts))]
       (reset! blog-posts posts)
-      (reset! blog-project (first posts))
       (reset! lmenuitems labels)
       (reset! rmenuitems tags))))
 
@@ -196,7 +194,13 @@
         [:div
          [anim/timeline
          (+ 1000 (* 50 (count @lmenuitems)))
-          #(get-posts-by-date year month "blog" blog-posts)]
+          #(cond
+             (= @selectedpage "blog")
+             (let [[year month] (first @blog-months)] 
+               (get-posts-by-date year month "blog" blog-posts))
+             :else
+             (let [project (first @blog-posts)]
+               (reset! blog-project project)))]
          [:div
           {:id "leftmenu"
            :style{:background "none"
@@ -205,7 +209,7 @@
                   :left "-180px"}}
           [:div {:class "leftmenubody"}
            (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts)]) (map-indexed vector items))]]]))))
-  
+
 
 (defn impressum []
   [:div {:class "impressum"}
@@ -436,7 +440,7 @@
 
 (defn newpost []
   (let [title (clojure.core/atom (if @posttoedit (@posttoedit :title) "title"))
-        date (clojure.core/atom (if @posttoedit (str (@posttoedit :date) "T00:00:00") "2010-01-01T10:10:00" ))
+        date (clojure.core/atom (if @posttoedit (str (clojure.core/subs (@posttoedit :date) 0 10) "T00:00:00") "2010-01-01T10:10:00" ))
         type (clojure.core/atom (if @posttoedit (@posttoedit :type) "type"))
         tags (clojure.core/atom (if @posttoedit (clojure.string/join "," (@posttoedit :tags)) "tags,tags"))
         content (clojure.core/atom (if @posttoedit (@posttoedit :content) "content"))
