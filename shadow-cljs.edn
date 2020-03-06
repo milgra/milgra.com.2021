@@ -4,7 +4,6 @@
 
  :dependencies [[binaryage/devtools "0.9.7"]
                 [cljs-http "0.1.45"]
-                [clj-time "0.15.2"]
                 [reagent "0.9.1"]
                 [markdown-to-hiccup "0.6.2"]
                 [cider/cider-nrepl "0.24.0"]
@@ -14,12 +13,12 @@
  :nrepl        {:port 8777}
  :builds
  {:app {:target :browser
+        :compiler-options {:elide-asserts false }
         :output-dir "resources/public/js/compiled"
         :asset-path "/js/compiled"
         :modules
         {:main
          {:entries [milgracom.core]}}
-        :release {:compiler-options {:optimizations :simple :infer-externs :auto}}
         :devtools
         ;; before live-reloading any code call this function
         {:before-load milgracom.core/stop
