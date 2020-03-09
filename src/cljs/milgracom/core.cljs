@@ -10,23 +10,17 @@
 
 (defonce server-url "http://116.203.87.141")
 ;;(defonce server-url "http://localhost:3000")
-(defonce menu-labels ["blog" "apps" "games" "protos"])
-(defonce menu-colors [0x9dfc92
-                      0x4ff05a
-                      0x9dfc92
-                      0x4ff05a])
-(defonce tabwidth 50)
 (defonce monthnames ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"])
-
 (defonce selectedpage (atom nil))
-(defonce menu-state (atom {:newlabels ["blog" "apps" "games" "protos"]
-                           :oldlabels ["blog" "apps" "games" "protos"]}))
 (defonce page-state (atom :normal))
 (defonce mode-admin (atom false))
 (defonce pass (atom nil))
 (defonce posttoedit (atom nil))
 (defonce blog-project (atom nil))
-
+(defonce lmenuitems (atom nil))
+(defonce rmenuitems (atom nil))
+(defonce blog-months (atom nil))
+(defonce blog-posts (atom nil))
 
 (defn get-posts-by-date [year month type blog-posts]
   (async/go
@@ -61,7 +55,6 @@
                   []
                   months)
           [year month] (if (> (count months) 0) (first months))]
-      (println "result" result)
       (reset! blog-months months)
       (reset! lmenuitems labels)
       (reset! rmenuitems tags))))
@@ -81,27 +74,8 @@
     (let [{:keys [status body]} (async/<! (http/get (str server-url "/delcomment")
                                                     {:query-params {:commid id :pass pass}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
-          status (result :result)]
-      (println "del" result)
-      )))
+          status (result :result)])))
  
-
-(defn get-metrics
-  "calculates size, position and color for menucard"
-  [label]
-  (let [index (.indexOf menu-labels label)
-        ;; get old and new positions
-        oldindex (.indexOf (@menu-state :oldlabels) label)
-        newindex (.indexOf (@menu-state :newlabels) label)]
-    {:oldcolor (nth menu-colors index)
-     :newcolor (nth menu-colors index)
-     ;; get old and new positions
-     :oldpos (if (= label (last (@menu-state :oldlabels))) 150 (* oldindex tabwidth))
-     :newpos (if (= label (last (@menu-state :newlabels))) 150 (* newindex tabwidth))
-     ;; get old and new size
-     :oldsize (if (= label (last (@menu-state :oldlabels))) 750 tabwidth)
-     :newsize (if (= label (last (@menu-state :newlabels))) 750 tabwidth)}))
-
 
 (defn rightmenubtn
   "returns a side menu button component with the proper contents for given label"
@@ -123,13 +97,8 @@
         {:id "rightmenubtn"
          :class "rightmenubtn"
          :style {:transform (str "translate(" @pos-spring "px)")
-                 :background (if (= (mod index 2) 0) "#9dfc92" "#4ff05a")}
-         :on-click (fn [e]
-                     (reset! pos 40)
-                     (reset! selecteditem label)
-                     (cond
-                       (= @selectedpage "blog")
-                       (println "e")))}
+                 :background (if (= (mod index 2) 0) "#dff6df" "#d5f3d5")}
+         :on-click (fn [e] )}
         label]
        [:div {:id "rightmenubottom"
               :style {:height "-1px"}}]])))
@@ -147,7 +116,7 @@
                  :top "200px"
                  :left "700px"}}
          [:div {:class "leftmenubody"}
-          (map (fn [item] ^{:key item} [(rightmenubtn item)]) (map-indexed vector items))]]))))
+          (doall (map (fn [item] ^{:key item} [rightmenubtn item]) (map-indexed vector items)))]]))))
 
 
 (defn leftmenubtn
@@ -170,13 +139,13 @@
         {:id "leftmenubtn"
          :class "leftmenubtn"
          :style {:transform (str "translate(" @pos-spring "px)")
-                 :background (if (= (mod index 2) 0) "#9dfc92" "#4ff05a")}
+                 :background (if (= (mod index 2) 0) "#dff6df" "#d5f3d5")}
          :on-click (fn [e]
                      (reset! pos 40)
                      (reset! selecteditem label)
                      (cond
                        (= @selectedpage "blog")
-                       (let [[year month] (nth @blog-months index)] 
+                       (let [[year month] (nth @blog-months index)]
                          (get-posts-by-date year month "blog" blog-posts))
                        :else
                        (let [project (nth @blog-posts index)]
@@ -188,17 +157,17 @@
 
 
 (defn leftmenu
-  [lmenuitems blog-months blog-posts]
+  [lmenuitems rmenuitems blog-months blog-posts]
   (fn a-leftmenu []
     (let [items @lmenuitems
-          [year month] (first @blog-months)] 
+          [year month] (first @blog-months)]
       (if items
         [:div
          [anim/timeline
-         (+ 500 (* 50 (count @lmenuitems)))
+         (+ 300 (* 50 (count @lmenuitems)))
           #(cond
              (= @selectedpage "blog")
-             (let [[year month] (first @blog-months)] 
+             (let [[year month] (first @blog-months)]
                (get-posts-by-date year month "blog" blog-posts))
              :else
              (let [project (first @blog-posts)]
@@ -210,7 +179,21 @@
                   :top "200px"
                   :left "-180px"}}
           [:div {:class "leftmenubody"}
-           (map (fn [item] ^{:key item} [(leftmenubtn item blog-months blog-posts)]) (map-indexed vector items))]]]))))
+           (doall (map (fn [item] ^{:key item} [leftmenubtn item blog-months blog-posts]) (map-indexed vector items)))]]]
+
+        (do
+          (cond
+            (= @selectedpage "blog")
+            (get-months "blog" lmenuitems rmenuitems blog-months blog-posts)
+            (= @selectedpage "games")
+            (get-posts "game" lmenuitems rmenuitems blog-posts)
+            (= @selectedpage "apps")
+            (get-posts "app" lmenuitems rmenuitems blog-posts)
+            (= @selectedpage "protos")
+            (get-posts "proto" lmenuitems rmenuitems blog-posts))
+          nil)
+
+        ))))
 
 
 (defn impressum []
@@ -285,7 +268,6 @@
                                                                                 {:query-params {:postid (post :id) :nick @nick :text @text :code @code}}))
                                       result (js->clj (.parse js/JSON body) :keywordize-keys true)
                                       status (result :result)]
-                                  (println "result" result)
                                   (if (= status "Invalid code")
                                     (reset! riddle "Invalid result, please try again later")
                                     (do
@@ -313,8 +295,8 @@
 
 (defn content-projects
   []
-  (if @blog-project
-    (fn []
+  (fn []
+    (if @blog-project
       [:div {:id "a-content"
              :class "content"}
        [:div {:style {:border-radius "0px"
@@ -347,7 +329,8 @@
                      showeditor (atom false)
                      riddle (atom nil)
                      comms (atom nil)]
-                 [:div {:key (rand 1000000)}
+                 [:div {:key (rand 1000000)
+                        :style {:z-index "inherit"}}
                   ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
                   [:h1 (post :title)]
                   [:h2 (post :date)]
@@ -362,82 +345,100 @@
              @blog-posts)])))
 
 
+(defonce menuitems (atom [
+                          {:color 0xdff6df
+                           :posatom (reagent/atom 0)
+                           :sizeatom (reagent/atom 0)
+                           :label "apps"
+                           :index (clojure.core/atom 5000)}
+                          {:color 0xd5f3d5
+                           :sizeatom (reagent/atom 0)
+                           :posatom (reagent/atom 0)
+                           :label "games"
+                           :index (clojure.core/atom 6000)}
+                          {:color 0xdff6df
+                           :sizeatom (reagent/atom 0)
+                           :posatom (reagent/atom 0)
+                           :label "protos"
+                           :index (clojure.core/atom 7000)}
+                          {:color 0xd5f3d5
+                           :posatom (reagent/atom 0)
+                           :sizeatom (reagent/atom 0)
+                           :label "blog"
+                           :index (clojure.core/atom 8000)}]))
+
+(defonce fixposes [ 0 50 100 150 ])
+(defonce fixsizes [ 50 50 50 750 ])
+
 (defn pagecard
   "returns a pagecard component with the proper contents for given label"
-  [label]
-  (let [lmenuitems (atom nil)
-        rmenuitems (atom nil)
-
-        blog-months (atom nil)
-        blog-posts (atom nil)
-
-        active (= label (last (@menu-state :newlabels)))
-        metrics (get-metrics label)
-        ;; component-local reagent atoms for animation
-        pos (reagent/atom (metrics :oldpos))
-        size (reagent/atom (metrics :oldsize))
-        color (reagent/atom (metrics :oldcolor))
-        ;; spring animators 
+  [index]
+  (let [item (nth @menuitems index)
+        label (item :label)
+       ;; component-local reagent atoms for animation
+        pos (item :posatom)
+        size (item :sizeatom)
+        ;; spring animators
         pos-spring (anim/spring pos {:mass 10.0 :stiffness 0.5 :damping 2.0})
-        size-spring (anim/spring size {:mass 3.0 :stiffness 0.5 :damping 2.0})
-        color-spring (anim/spring color {:mass 5.0 :stiffness 0.5 :damping 2.0})]
+        size-spring (anim/spring size {:mass 3.0 :stiffness 0.5 :damping 2.0}) ]
+    
+    (reset! pos (nth fixposes index))
+    (reset! size (nth fixsizes index))
 
     (fn a-pagecard []
-      [:div {:key (str "pagecard" label)}
-       ;; animation structure
-       [anim/timeline
-        0
-        #(reset! color (metrics :newcolor))
-        0
-        #(reset! pos (metrics :newpos))
-        300
-        #(reset! size (metrics :newsize))
-        300
-        #(when active
-           (cond
-             (= label "blog")
-             (get-months "blog" lmenuitems rmenuitems blog-months blog-posts)
-             (= label "games")
-             (get-posts "game" lmenuitems rmenuitems blog-posts)
-             (= label "apps")
-             (get-posts "app" lmenuitems rmenuitems blog-posts)
-             (= label "protos")
-             (get-posts "proto" lmenuitems rmenuitems blog-posts)))
-        ]
-       ;; pagecard start
-       [:div
-        {:key label
-         :class "card"
-         :style {:background (cl-format nil "#~6,'0x" @color-spring)
-                 :transform (str "translate(" @pos-spring "px)")
-                 :width @size-spring}}
-        ;; pagecard button
-        [:div {:key "cardbutton"
-               :class "cardbutton"
-               :on-click (fn [e]
-                           (reset! lmenuitems nil)
-                           (reset! rmenuitems nil)
-                           (reset! blog-months nil)
-                           (reset! blog-posts nil)
-                           (reset! blog-project nil)
-                           (reset! selectedpage label)
-                           (let [new-state (concat (filter #(not= % label) (@menu-state :newlabels)) [label])]
-                             (swap! menu-state assoc :oldlabels (@menu-state :newlabels))
-                             (swap! menu-state assoc :newlabels new-state)))}
-         label]
-        ;;pagecard submenu
-        (if active [leftmenu lmenuitems blog-months blog-posts])
-        (if active [rightmenu rmenuitems])
-        ;;pagecard content
-        (cond
-          (and active (= label "blog")) [content-posts blog-posts]
-          (and active (= label "apps")) [content-projects "apps" blog-posts]
-          (and active (= label "games")) [content-projects "games" blog-posts]
-          (and active (= label "protos")) [content-projects "protos" blog-posts])
+
+      (let [active (= @selectedpage label)
+            zindex (deref (item :index)) ]
+
+        [:div {:key (str "pagecard" label)}
+         ;; pagecard start
+         [:div
+          {:key label
+           :class "card"
+           :style {:background (cl-format nil "#~6,'0x" (item :color))
+                   :transform (str "translate(" @pos-spring "px)")
+                   :width @size-spring
+                   :z-index zindex
+                   }}
+          ;; pagecard button
+          [:div {:key "cardbutton"
+                 :class "cardbutton"
+                 :on-click (fn [e]
+                             ;; shift menuitems
+                             (reset! menuitems
+                                      (concat
+                                       (filter #(not= (% :label) label) @menuitems)
+                                       (filter #(= (% :label) label) @menuitems)))
+                             ;; repos
+                             (doall
+                              (map (fn [[idx elem]]
+                                     (reset! (elem :posatom)(nth fixposes idx))
+                                     (reset! (elem :sizeatom)(nth fixsizes idx))
+                                     (reset! (elem :index) idx)
+                                     )
+                                   (map-indexed vector @menuitems)))
+                             
+                             (reset! lmenuitems nil)
+                             (reset! rmenuitems nil)
+                             (reset! blog-months nil)
+                             (reset! blog-posts nil)
+                             (reset! blog-project nil)
+                             (reset! selectedpage label)
+                           )}
+           label]
+          ;;pagecard submenu
+          (if active [leftmenu lmenuitems rmenuitems blog-months blog-posts])
+          (if active [rightmenu rmenuitems])
+          ;;pagecard content
+          (cond
+            (and active (= label "blog")) [content-posts blog-posts]
+            (and active (= label "apps")) [content-projects "apps" blog-posts]
+            (and active (= label "games")) [content-projects "games" blog-posts]
+            (and active (= label "protos")) [content-projects "protos" blog-posts])
         ;;impressum
-        (if (or @blog-posts)
-          [impressum])
-        ]])))
+          (if active
+            [impressum])
+          ]]))))
 
 
 (defn newpost []
@@ -507,7 +508,7 @@
        [newpost]
        :else
        [:div {:id "pagecompbody"}      
-        (map (fn [label] ^{:key label} [(pagecard label)]) (@menu-state :newlabels))])
+        (doall (map (fn [index] ^{:key (str "card" index)} [pagecard index]) (range 4) ))])
 
      [:div {:key "logo"
             :class "logo"}
@@ -546,17 +547,14 @@
 
 (defn start []
 
+  (reset! selectedpage "blog")
+
   (let [params (parse-params)]
     (reset! mode-admin (params :admin))
     (reagent/render-component
      [page]
      (. js/document (getElementById "app"))))
-     
-  ;; animate to blog
-  (reset! selectedpage "blog")
-  (let [new-state (concat (filter #(not= % "blog") (@menu-state :newlabels)) ["blog"])]
-    (swap! menu-state assoc :oldlabels (@menu-state :newlabels))
-    (swap! menu-state assoc :newlabels new-state)))
+  )
 
 
 (defn ^:export init []

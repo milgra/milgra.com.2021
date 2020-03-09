@@ -13,7 +13,6 @@
  :nrepl        {:port 8777}
  :builds
  {:app {:target :browser
-        :compiler-options {:elide-asserts false }
         :output-dir "resources/public/js/compiled"
         :asset-path "/js/compiled"
         :modules

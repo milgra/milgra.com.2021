@@ -3,7 +3,7 @@
 body {
     margin : 0px;
     padding : 0;
-    background-color : #d1ffcc;
+    background-color : #eeffee;
     text-shadow: 1px 1px 3px #AAAAAA;   
 }
 
@@ -176,7 +176,7 @@ textarea {
 .impressum {
     position : absolute;
     color : #000000;
-    background : #4ff55a;
+    background : #dff6df;
     padding : 0px;
     margin : 0px;
     width : 100%;
@@ -185,6 +185,7 @@ textarea {
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     text-align : center;
+    box-shadow: 2px -2px 5px 0 rgba(0, 0, 0, 0.2);
 }
 
 .comments {
