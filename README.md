@@ -2,7 +2,7 @@
 
 This is a project that I used to learn full stack web development in clojure and this is also the source code of my homepage.
 
-Step-by-step tutorial on how to create will be here : [link](github.com/milgra/full-stack-clojure)
+[Check it out](http://milgra.com)
 
 client side code : src/cljs
 
