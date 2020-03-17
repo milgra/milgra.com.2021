@@ -18,7 +18,7 @@
 (defonce ip-to-result (atom []))
 (defonce number-names ["zero" "one" "two" "three" "four" "five" "six" "seven" "eight" "nine"])
 (defonce types ["blog" "game" "app" "proto"])
-
+(defonce conn (d/connect uri))
 
 (defn get-client-ip [req]
   (if-let [ips (get-in req [:headers "x-forwarded-for"])]
@@ -29,8 +29,7 @@
 (defn get-all-posts
   "get all posts"
   []
-  (let [conn (d/connect uri)
-        db (d/db conn)
+  (let [db (d/db conn)
         posts (d/q db/all-posts-all-data-q db)]
     posts))
 
@@ -38,8 +37,7 @@
 (defn get-all-comments
   "get all comments"
   []
-  (let [conn (d/connect uri)
-        db (d/db conn)
+  (let [db (d/db conn)
         posts (d/q db/all-comments-all-data-q db)]
     posts))
 
@@ -49,8 +47,7 @@
   []
   (let [succ (d/create-database uri)] 
     (if succ 
-      (let [conn (d/connect uri)
-            db (d/db conn)]
+      (let [db (d/db conn)]
         (let [resp (d/transact conn db/post-schema)]
           (println "post schema insert resp" resp))
         (let [resp (d/transact conn db/comment-schema)]
@@ -68,8 +65,7 @@
 (defn fillup
   "fill up db with dev data"
   []
-  (let [conn (d/connect uri)
-        db (d/db conn)]
+  (let [db (d/db conn)]
     (let [resp (d/transact conn db/first-posts)]
       (println "post insert resp" resp))
     (let [postid ((first (first (get-all-posts))) :db/id)
@@ -82,7 +78,6 @@
   "get all months where posts exist"
   [type]
   (let [dbtype (keyword type)
-        conn (d/connect uri)
         db (d/db conn)
         dates (d/q db/all-post-months-by-type-q db dbtype)]
     (reverse (sort (set (map
@@ -95,7 +90,6 @@
   "get all tags in posts"
   [type]
   (let [dbtype (keyword type)
-        conn (d/connect uri)
         db (d/db conn)
         tags (d/q db/all-post-tags-by-type-q db dbtype)]
     (reduce (fn [res item] (into res ((first item) :post/tags)) ) #{} tags)))
@@ -108,7 +102,6 @@
   (let [dbyear (Integer/parseInt year)
         dbmonth (Integer/parseInt month)
         dbtype (keyword type)
-        conn (d/connect uri)
         db (d/db conn)
         endmonth (if (= dbmonth 12) 1 (+ dbmonth 1))
         endyear (if (= dbmonth 12) (+ dbyear 1) dbyear)
@@ -125,7 +118,6 @@
   "get all posts for given year and month"
   [type]
   (let [dbtype (keyword type)
-        conn (d/connect uri)
         db (d/db conn)
         posts (d/q db/all-posts-all-data-by-type-q db dbtype)]
     (sort-by :post/date (map (fn [[{date :post/date :as val}]]
@@ -135,11 +127,33 @@
 ;;(get-posts-for-type "game")
 ;;(str #inst "2019-12-30T01:01:01")
 
+
+(defn get-posts-for-tag
+  "get post titles for given tag"
+  [tag]
+  (let [db (d/db conn)
+        posts (d/q db/posts-for-tag-q db tag)]
+    (reverse (sort-by :post/date (map (fn [[{date :post/date :as val}]]
+           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss") date)))
+    posts)))))
+
+;;(get-posts-for-tag "Coding")
+
+(defn get-post
+  [id]
+  (let [db (d/db conn)
+        post (d/entity db id)
+        postmap (into {} (seq post))]
+    ;;(assoc postmap :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss") (:post/date postmap)))
+    postmap
+    ))
+
+;;(get-post 17592186045490)
+
 (defn get-post-comments
   "returns comments for give post id"
   [postid]
   (let [dbpostid (Long/parseLong postid)
-        conn (d/connect uri)
         db (d/db conn)
         comments (d/q db/comments-for-post-q db dbpostid)]
     (reverse (map (fn [[{date :comment/date :as val}]]
@@ -160,7 +174,6 @@
                  :post/date (clojure.instant/read-instant-date date)
                  :post/content content
                  }]
-          conn (d/connect uri)
           db (d/db conn)
           resp (d/transact conn data)]
       "OK")
@@ -181,7 +194,6 @@
                  :post/date (clojure.instant/read-instant-date date)
                  :post/content content
                  }]
-          conn (d/connect uri)
           db (d/db conn)
           resp (d/transact conn data)]
       "OK")
@@ -193,7 +205,6 @@
   [pass id]
   (if (password/check pass epass)
     (let [dbid (Long/parseLong id)
-          conn (d/connect uri)
           resp (d/transact conn [[:db.fn/retractEntity dbid]])]
       "OK")
     "Invalid pass"))
@@ -213,7 +224,6 @@
                      :comment/content content
                      :comment/nick nick
                      :comment/date (new java.util.Date)}]
-              conn (d/connect uri)
               resp (d/transact conn data)]
           "OK")
         "Invalid code"))
@@ -225,7 +235,6 @@
   [pass id]
   (if (password/check pass epass)
     (let [dbid (Long/parseLong id)
-          conn (d/connect uri)
           resp (d/transact conn [[:db.fn/retractEntity dbid]])]
       "OK")
     "Invalid pass"))
@@ -253,7 +262,9 @@
   (GET "/" [] (resp/redirect "/index.html"))
   (GET "/months" [type] (json/write-str {:months (get-post-months type) :tags (get-post-tags type)}))
   (GET "/postsbydate" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
+  (GET "/postsbytag" [tag] (json/write-str {:posts (get-posts-for-tag tag)}))
   (GET "/posts" [year month type] (json/write-str {:posts (get-posts-for-type type) :tags (get-post-tags type)}))
+  (GET "/post" [id] (json/write-str {:posts (get-post id)}))
   (GET "/comments" [postid] (json/write-str {:comments (get-post-comments postid)}))
   (GET "/genriddle" request (json/write-str {:question (generate-riddle (get-client-ip request))}))
   (GET "/newcomment" [postid nick text code :as request] (json/write-str {:result (add-comment postid nick text code request)}))

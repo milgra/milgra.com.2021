@@ -57,7 +57,7 @@ textarea {
     margin : 0px;
     padding-bottom : 10px;
     position : absolute;
-    height : 99vh;
+    min-height : 99vh;
     box-shadow: 0 0px 20px 0 rgba(0, 0, 0, 0.3);
     display:inline-block;
 }
@@ -70,7 +70,7 @@ textarea {
     right: 10px;
     top: -5px;
     display: inline-block;
-    font-size : 1.9em;
+    font-size : 1.5em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     border : none;
@@ -90,7 +90,7 @@ textarea {
     position: relative;
     left: 0px;
     top: -20px;
-    font-size : 1.1em;
+    font-size : 1.0em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     border : none;
@@ -110,7 +110,7 @@ textarea {
     position: relative;
     left: 0px;
     top: -20px;
-    font-size : 1.1em;
+    font-size : 1.0em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     border : none;
@@ -129,7 +129,7 @@ textarea {
     transform-origin: bottom right;
     transform: rotate(-90deg);
     float : right;
-    font-size : 1.9em;
+    font-size : 1.5em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     text-shadow: 1px 1px 3px #555555;
@@ -163,29 +163,25 @@ textarea {
     padding-top : 0px;
     padding-bottom : 0px;
     color : #000000;
-    font-size : 1em;
+    font-size : 0.9em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-    #display:inline-block;
-    height: 100%;
-    #overflow: auto;
-    #3border-radius: 10px;
-    overflow-y: scroll;
+    display:inline-block;
 }
 
 .impressum {
     position : absolute;
     color : #000000;
-    background : #dff6df;
-    padding : 0px;
+    background : none;
+    padding : 5px;
     margin : 0px;
     width : 100%;
     bottom : 0px;
-    font-size : 1em;
+    font-size : 0.9em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     text-align : center;
-    box-shadow: 2px -2px 5px 0 rgba(0, 0, 0, 0.2);
+
 }
 
 .comments {
@@ -203,7 +199,14 @@ textarea {
 
 
 h1 {
-    font-size : 2em;
+    font-size : 1.5em;
+    font-weight : bold;
+    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
+}
+
+
+h2 {
+    font-size : 0.9em;
     font-weight : 400;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
 }

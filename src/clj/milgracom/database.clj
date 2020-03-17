@@ -75,6 +75,7 @@
     [?e :post/type ?ptype]
     [(= ?type ?ptype)]])
 
+
 (def all-post-tags-by-type-q
   '[:find (pull ?e [:post/tags])
     :in $ ?type
@@ -83,12 +84,21 @@
     [(= ?type ?ptype)]])
 
 
+
 (def all-post-months-by-type-q
   '[:find (pull ?e [:post/date])
     :in $ ?type
     :where
     [?e :post/type ?ptype]
     [(= ?type ?ptype)]])
+
+
+(def posts-for-tag-q
+  '[:find (pull ?e [:db/id :post/title :post/date])
+    :in $ ?intag
+    :where
+    [?e :post/tags ?tags]
+    [(= ?tags ?intag)]])
 
 
 (def posts-between-dates-by-type-q

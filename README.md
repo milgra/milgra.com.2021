@@ -4,20 +4,23 @@ This is a project that I used to learn full stack web development in clojure and
 
 Step-by-step tutorial on how to create will be here : [link](github.com/milgra/full-stack-clojure)
 
-client side code : src/cljs
+client side code : ```src/cljs```
 
-server side code : src/clj
+server side code : ```src/clj```
 
 start server :
 
-lein ring server-headless
+```lein ring server-headless```
 
 start shadow-cljs repl and server for client side dev :
 
-shadow watch app
+```shadow watch app```
 
 todo :
 
+* search field & functionality
+* dynamic page size based on window size to help mobile viewers
+* tag button should show up a title list instead of all posts
 * increase comment counter
 * admin should show up with actual date at new post
 * all posts admin page with delete button

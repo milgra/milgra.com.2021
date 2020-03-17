@@ -164,7 +164,7 @@
       (if items
         [:div
          [anim/timeline
-         (+ 300 (* 50 (count @lmenuitems)))
+         (+ 50 (* 50 (count @lmenuitems)))
           #(cond
              (= @selectedpage "blog")
              (let [[year month] (first @blog-months)]
@@ -333,8 +333,7 @@
                         :style {:z-index "inherit"}}
                   ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
                   [:h1 (post :title)]
-                  [:h2 (post :date)]
-                  [:h2 (clojure.string/join "," (post :tags))]
+                  [:h2 (str (post :date) " / " (clojure.string/join "," (post :tags)))]
                   (m/component (m/md->hiccup (post :content)))
                   [:br]
                   [comments post comms showcomments showeditor riddle]
@@ -346,22 +345,22 @@
 
 
 (defonce menuitems (atom [
-                          {:color 0xdff6df
+                          {:color "#dff6df"
                            :posatom (reagent/atom 0)
                            :sizeatom (reagent/atom 0)
                            :label "apps"
                            :index (clojure.core/atom 5000)}
-                          {:color 0xd5f3d5
+                          {:color "#d5f3d5"
                            :sizeatom (reagent/atom 0)
                            :posatom (reagent/atom 0)
                            :label "games"
                            :index (clojure.core/atom 6000)}
-                          {:color 0xdff6df
+                          {:color "#dff6df"
                            :sizeatom (reagent/atom 0)
                            :posatom (reagent/atom 0)
                            :label "protos"
                            :index (clojure.core/atom 7000)}
-                          {:color 0xd5f3d5
+                          {:color "#d5f3d5"
                            :posatom (reagent/atom 0)
                            :sizeatom (reagent/atom 0)
                            :label "blog"
@@ -395,7 +394,7 @@
          [:div
           {:key label
            :class "card"
-           :style {:background (cl-format nil "#~6,'0x" (item :color))
+           :style {:background (item :color)
                    :transform (str "translate(" @pos-spring "px)")
                    :width @size-spring
                    :z-index zindex
@@ -435,7 +434,7 @@
             (and active (= label "apps")) [content-projects "apps" blog-posts]
             (and active (= label "games")) [content-projects "games" blog-posts]
             (and active (= label "protos")) [content-projects "protos" blog-posts])
-        ;;impressum
+          ;;impressum
           (if active
             [impressum])
           ]]))))
