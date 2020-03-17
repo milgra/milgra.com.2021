@@ -8,8 +8,8 @@
             [cljs-http.client :as http]))
 
 
-(defonce server-url "http://116.203.87.141")
-;;(defonce server-url "http://localhost:3000")
+;;(defonce server-url "http://116.203.87.141")
+(defonce server-url "http://localhost:3000")
 (defonce monthnames ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"])
 (defonce selectedpage (atom nil))
 (defonce page-state (atom :normal))
@@ -21,6 +21,8 @@
 (defonce rmenuitems (atom nil))
 (defonce blog-months (atom nil))
 (defonce blog-posts (atom nil))
+(defonce blog-list (atom nil))
+(defonce blog-tag (atom nil))
 
 (defn get-posts-by-date [year month type blog-posts]
   (async/go
@@ -28,6 +30,15 @@
                                                     {:query-params {:year year :month month :type type}}))
           posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))]
       (reset! blog-posts (reverse posts)))))
+
+
+(defn get-posts-by-tag [tag]
+  (reset! blog-tag tag)
+  (async/go
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/postsbytag")
+                                                    {:query-params {:tag tag}}))
+          posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))]
+      (reset! blog-list posts))))
 
 
 (defn get-posts [type lmenuitems rmenuitems blog-posts]
@@ -98,14 +109,17 @@
          :class "rightmenubtn"
          :style {:transform (str "translate(" @pos-spring "px)")
                  :background (if (= (mod index 2) 0) "#dff6df" "#d5f3d5")}
-         :on-click (fn [e] )}
+         :on-click (fn [e]
+                     (reset! pos 40)
+                     (get-posts-by-tag label)
+                     )}
         label]
        [:div {:id "rightmenubottom"
               :style {:height "-1px"}}]])))
 
 
 (defn rightmenu
-  [rmenuitems]
+  []
   (fn a-leftmenu []
     (let [items @rmenuitems]
       (if items
@@ -121,7 +135,7 @@
 
 (defn leftmenubtn
   "returns a side menu button component with the proper contents for given label"
-  [[index label] blog-months blog-posts]
+  [[index label]]
   (let [selecteditem (atom nil)
         ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) -2))
@@ -142,6 +156,7 @@
                  :background (if (= (mod index 2) 0) "#dff6df" "#d5f3d5")}
          :on-click (fn [e]
                      (reset! pos 40)
+                     (reset! blog-list nil)
                      (reset! selecteditem label)
                      (cond
                        (= @selectedpage "blog")
@@ -157,7 +172,7 @@
 
 
 (defn leftmenu
-  [lmenuitems rmenuitems blog-months blog-posts]
+  []
   (fn a-leftmenu []
     (let [items @lmenuitems
           [year month] (first @blog-months)]
@@ -288,7 +303,7 @@
                    [:div {:style {:cursor "pointer"}
                           :class "showcommentbtn"
                           :on-click (fn [event] (delete-comment (comment :id) @pass ))} "Delete comment"])
-                 [:hr {:style {:width "20%" :background-color "#000033"}}]
+                 [:hr]
                  ])
               @comments))]))
 
@@ -299,50 +314,62 @@
     (if @blog-project
       [:div {:id "a-content"
              :class "content"}
-       [:div {:style {:border-radius "0px"
-                      :height "100%"}}
-        (let [showcomments (atom false)
-              showeditor (atom false)
-              riddle (atom nil)
-              comms (atom nil)]
-          [:div {:key (rand 1000000)}
-           ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
-           [:h1 (@blog-project :title)]
-           [:h2 (clojure.string/join "," (@blog-project :tags))]
-           (m/component (m/md->hiccup (@blog-project :content) (:encode? true)))
-           [:br]
-           [comments @blog-project comms showcomments showeditor riddle]
-           [:br]
-           [:div {:class "horline"}]
-           [:br]
-           ])]])))
+       (let [showcomments (atom false)
+             showeditor (atom false)
+             riddle (atom nil)
+             comms (atom nil)]
+         [:div {:key (rand 1000000)}
+          ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
+          [:h1 (@blog-project :title)]
+          [:h2 (clojure.string/join "," (@blog-project :tags))]
+          (m/component (m/md->hiccup (@blog-project :content) (:encode? true)))
+          [:br]
+          [comments @blog-project comms showcomments showeditor riddle]
+          [:br]
+          [:hr]])])))
 
 
 (defn content-posts
-  [blog-posts]
-  (if @blog-posts
-    (fn []
+  []
+  (fn []
+    (if @blog-posts
       [:div {:id "a-content"
              :class "content"}
-        (map (fn [post]
-               (let [showcomments (atom false)
-                     showeditor (atom false)
-                     riddle (atom nil)
-                     comms (atom nil)]
-                 [:div {:key (rand 1000000)
-                        :style {:z-index "inherit"}}
+       (map (fn [post]
+              (let [showcomments (atom false)
+                    showeditor (atom false)
+                    riddle (atom nil)
+                    comms (atom nil)]
+                [:div {:key (rand 1000000)
+                       :style {:z-index "inherit"}}
                   ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
-                  [:h1 (post :title)]
-                  [:h2 (str (post :date) " / " (clojure.string/join "," (post :tags)))]
-                  (m/component (m/md->hiccup (post :content)))
-                  [:br]
-                  [comments post comms showcomments showeditor riddle]
-                  [:br]
-                  [:div {:class "horline"}]
-                  [:br]
-                  ]))
-             @blog-posts)])))
+                 [:h1 (post :title)]
+                 [:h2 (str (post :date) " / " (clojure.string/join "," (post :tags)))]
+                 (m/component (m/md->hiccup (post :content)))
+                 [:br]
+                 [comments post comms showcomments showeditor riddle]
+                 [:br]
+                 [:hr]]))
+            @blog-posts)])))
 
+
+(defn content-list
+  []
+  (fn []
+    (if @blog-list
+      [:div {:id "a-content"
+             :class "content"}
+       [:h1 (str "Posts with the tag " @blog-tag)]
+       (map (fn [post]
+              [:div {:key (rand 1000000)
+                     :style {:z-index "inherit"}
+                     :on-click (fn [event] (println "CLICK" ))}
+               (str (subs (post :date) 0 10) " " (post :title))
+               [:br][:br]])
+            @blog-list)
+       [:br]]
+       )))
+  
 
 (defonce menuitems (atom [
                           {:color "#dff6df"
@@ -416,7 +443,8 @@
                                      (reset! (elem :index) idx)
                                      )
                                    (map-indexed vector @menuitems)))
-                             
+
+                             (reset! blog-list nil)
                              (reset! lmenuitems nil)
                              (reset! rmenuitems nil)
                              (reset! blog-months nil)
@@ -426,14 +454,15 @@
                            )}
            label]
           ;;pagecard submenu
-          (if active [leftmenu lmenuitems rmenuitems blog-months blog-posts])
-          (if active [rightmenu rmenuitems])
+          (if active [leftmenu])
+          (if active [rightmenu])
           ;;pagecard content
           (cond
-            (and active (= label "blog")) [content-posts blog-posts]
-            (and active (= label "apps")) [content-projects "apps" blog-posts]
-            (and active (= label "games")) [content-projects "games" blog-posts]
-            (and active (= label "protos")) [content-projects "protos" blog-posts])
+            (and active (not= nil @blog-list)) [content-list]
+            (and active (= label "blog")) [content-posts]
+            (and active (= label "apps")) [content-projects "apps"]
+            (and active (= label "games")) [content-projects "games"]
+            (and active (= label "protos")) [content-projects "protos"])
           ;;impressum
           (if active
             [impressum])

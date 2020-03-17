@@ -133,11 +133,10 @@
   [tag]
   (let [db (d/db conn)
         posts (d/q db/posts-for-tag-q db tag)]
-    (reverse (sort-by :post/date (map (fn [[{date :post/date :as val}]]
-           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss") date)))
-    posts)))))
+    (reverse (sort-by :post/date (map #(assoc % :post/date (subs (pr-str (% :post/date)) 7 26)) (map first posts)))
+    )))
 
-;;(get-posts-for-tag "Coding")
+;;(get-posts-for-tag "Music")
 
 (defn get-post
   [id]

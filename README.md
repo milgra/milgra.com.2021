@@ -18,21 +18,21 @@ start shadow-cljs repl and server for client side dev :
 
 todo :
 
+* post delete button
+* css cleanup & refactor
+* stilusok kivezetese
+
 * search field & functionality
 * dynamic page size based on window size to help mobile viewers
-* tag button should show up a title list instead of all posts
 * increase comment counter
 * admin should show up with actual date at new post
 * all posts admin page with delete button
 * allow access only from ip
-* stilusok kivezetese
 * insert go blocks into functions where possible
 * break up code, create component namespaces
 * rossz code eseten kerje ujra code-ot vagy dobjon napi kvota lejartat
 * server csekkoljon minden parametert
 * tesztek
-* shadow-cljs release app not working
-* auto backup
 * "loading" text stylize in html on startup
 * szerver nelkul hogy kezeli a site a hibakat?
 * heckelest hogy allja a szerver?
