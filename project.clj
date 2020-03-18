@@ -1,5 +1,5 @@
-(defproject milgra.com.server "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
+(defproject milgra.com.server "0.6.0"
+  :description "milgra.com homepgae"
   :url "http://example.com/FIXME"
   :min-lein-version "2.0.0"
   :repositories {"my.datomic.com" {:url "https://my.datomic.com/repo"

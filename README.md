@@ -18,7 +18,9 @@ start shadow-cljs repl and server for client side dev :
 
 todo :
 
-* post delete button
+* valid hour:minute on post edit
+* convert to inst everywhere
+* working post view & url change when post view
 * css cleanup & refactor
 * stilusok kivezetese
 

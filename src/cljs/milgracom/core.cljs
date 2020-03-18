@@ -8,8 +8,8 @@
             [cljs-http.client :as http]))
 
 
-;;(defonce server-url "http://116.203.87.141")
-(defonce server-url "http://localhost:3000")
+(defonce server-url "http://116.203.87.141")
+;;(defonce server-url "http://localhost:3000")
 (defonce monthnames ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"])
 (defonce selectedpage (atom nil))
 (defonce page-state (atom :normal))
@@ -83,10 +83,10 @@
 (defn delete-comment [id pass]
   (async/go
     (let [{:keys [status body]} (async/<! (http/get (str server-url "/delcomment")
-                                                    {:query-params {:commid id :pass pass}}))
+                                                    {:query-params {:id id :pass pass}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           status (result :result)])))
- 
+
 
 (defn rightmenubtn
   "returns a side menu button component with the proper contents for given label"
@@ -514,7 +514,20 @@
                             (if (= status "OK")
                               (reset! page-state :normal))
                               (js/alert status)))
-                      )} "Send"]]))
+                      )} "Send"]
+
+   [:div {:style {:cursor "pointer" :width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}
+          :on-click (fn [event]
+                      (async/go
+                        (let [{:keys [status body]} (async/<! (http/get (str server-url "/delpost")
+                                                                        {:query-params {:id id :pass @pass}}))
+                              result (js->clj (.parse js/JSON body) :keywordize-keys true)
+                              status (result :result)]
+                          (if (= status "OK")
+                            (reset! page-state :normal))
+                          (js/alert status)))
+                      )} "!!!Remove Post!!!"]
+   ]))
 
 
 (defn page []

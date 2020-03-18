@@ -229,8 +229,8 @@
     "Invalid parameters"))
 
 
-(defn remove-comment
-  "retracts comment from database"
+(defn remove-entity
+  "retracts entity from database"
   [pass id]
   (if (password/check pass epass)
     (let [dbid (Long/parseLong id)
@@ -267,10 +267,13 @@
   (GET "/comments" [postid] (json/write-str {:comments (get-post-comments postid)}))
   (GET "/genriddle" request (json/write-str {:question (generate-riddle (get-client-ip request))}))
   (GET "/newcomment" [postid nick text code :as request] (json/write-str {:result (add-comment postid nick text code request)}))
-  (GET "/delcomment" [pass id] (json/write-str {:result (remove-comment pass id)}))
 
+  ;; admin related
+  
   (POST "/newpost" [pass title date tags type content] (json/write-str {:result (add-post pass title date tags type  content)}))
   (POST "/updatepost" [pass id title date tags type content] (json/write-str {:result (update-post pass id title date tags type content)}))
+  (GET "/delpost" [pass id] (json/write-str {:result (remove-entity pass id)}))
+  (GET "/delcomment" [pass id] (json/write-str {:result (remove-entity pass id)}))
   
   (route/resources "/")
   (route/not-found "Not Found"))
