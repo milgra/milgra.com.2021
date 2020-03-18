@@ -140,14 +140,17 @@
 
 (defn get-post
   [id]
-  (let [db (d/db conn)
-        post (d/entity db id)
-        postmap (into {} (seq post))]
+  (let [dbid (Long/parseLong id)
+        db (d/db conn)
+        entity (d/entity db dbid)
+        post (into {} (seq entity))
+        result (assoc post :post/date (subs (pr-str (post :post/date)) 7 26))
+        ]
     ;;(assoc postmap :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss") (:post/date postmap)))
-    postmap
-    ))
 
-;;(get-post 17592186045490)
+    (list result)))
+
+;;(get-post "17592186045508")
 
 (defn get-post-comments
   "returns comments for give post id"

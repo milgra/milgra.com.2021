@@ -20,7 +20,6 @@ todo :
 
 * valid hour:minute on post edit
 * convert to inst everywhere
-* working post view & url change when post view
 * css cleanup & refactor
 * stilusok kivezetese
 

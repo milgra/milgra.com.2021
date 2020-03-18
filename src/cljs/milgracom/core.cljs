@@ -7,22 +7,28 @@
             [cljs.pprint :as print :refer [cl-format]]
             [cljs-http.client :as http]))
 
-
 (defonce server-url "http://116.203.87.141")
 ;;(defonce server-url "http://localhost:3000")
 (defonce monthnames ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"])
-(defonce selectedpage (atom nil))
+
+(defonce selected-page (atom nil))
+(defonce selected-post (atom nil))
+
 (defonce page-state (atom :normal))
 (defonce mode-admin (atom false))
 (defonce pass (atom nil))
+
 (defonce posttoedit (atom nil))
 (defonce blog-project (atom nil))
+
 (defonce lmenuitems (atom nil))
 (defonce rmenuitems (atom nil))
+
 (defonce blog-months (atom nil))
 (defonce blog-posts (atom nil))
 (defonce blog-list (atom nil))
 (defonce blog-tag (atom nil))
+
 
 (defn get-posts-by-date [year month type blog-posts]
   (async/go
@@ -52,6 +58,15 @@
       (reset! blog-posts posts)
       (reset! lmenuitems labels)
       (reset! rmenuitems tags))))
+
+
+(defn get-post [id]
+  (async/go
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/post")
+                                                    {:query-params {:id id}}))
+          result (js->clj (.parse js/JSON body) :keywordize-keys true)
+          posts (result :posts)]
+      (reset! blog-posts posts))))
 
 
 (defn get-months [type lmenuitems rmenuitems blog-months blog-posts]
@@ -91,12 +106,12 @@
 (defn rightmenubtn
   "returns a side menu button component with the proper contents for given label"
   [[index label]]
-  (let [selecteditem (atom nil)
+  (let [selected-item (atom nil)
         ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) 2))
         ;; spring animators 
         pos-spring (anim/spring pos {:mass 5.0 :stiffness 0.5 :damping 3.0})
-        newpos (if (= @selecteditem label) 40 30)]
+        newpos (if (= @selected-item label) 40 30)]
     (fn a-leftmenubtn []
       [:div {:class "a-leftmenubtn"}
        ;; animation structure
@@ -111,6 +126,7 @@
                  :background (if (= (mod index 2) 0) "#dff6df" "#d5f3d5")}
          :on-click (fn [e]
                      (reset! pos 40)
+                     (reset! selected-post nil)
                      (get-posts-by-tag label)
                      )}
         label]
@@ -136,12 +152,12 @@
 (defn leftmenubtn
   "returns a side menu button component with the proper contents for given label"
   [[index label]]
-  (let [selecteditem (atom nil)
+  (let [selected-item (atom nil)
         ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) -2))
         ;; spring animators 
         pos-spring (anim/spring pos {:mass 5.0 :stiffness 0.5 :damping 3.0})
-        newpos (if (= @selecteditem label) 40 30)]
+        newpos (if (= @selected-item label) 40 30)]
     (fn a-leftmenubtn []
       [:div {:class "a-leftmenubtn"}
        ;; animation structure
@@ -157,9 +173,10 @@
          :on-click (fn [e]
                      (reset! pos 40)
                      (reset! blog-list nil)
-                     (reset! selecteditem label)
+                     (reset! selected-post nil)
+                     (reset! selected-item label)
                      (cond
-                       (= @selectedpage "blog")
+                       (= @selected-page "blog")
                        (let [[year month] (nth @blog-months index)]
                          (get-posts-by-date year month "blog" blog-posts))
                        :else
@@ -181,7 +198,10 @@
          [anim/timeline
          (+ 50 (* 50 (count @lmenuitems)))
           #(cond
-             (= @selectedpage "blog")
+             (not= @selected-post nil)
+             (get-post @selected-post)
+             (= @selected-page "blog")
+             ;; get first menu item and load posts for montj
              (let [[year month] (first @blog-months)]
                (get-posts-by-date year month "blog" blog-posts))
              :else
@@ -198,13 +218,13 @@
 
         (do
           (cond
-            (= @selectedpage "blog")
+            (= @selected-page "blog")
             (get-months "blog" lmenuitems rmenuitems blog-months blog-posts)
-            (= @selectedpage "games")
+            (= @selected-page "games")
             (get-posts "game" lmenuitems rmenuitems blog-posts)
-            (= @selectedpage "apps")
+            (= @selected-page "apps")
             (get-posts "app" lmenuitems rmenuitems blog-posts)
-            (= @selectedpage "protos")
+            (= @selected-page "protos")
             (get-posts "proto" lmenuitems rmenuitems blog-posts))
           nil)
 
@@ -342,8 +362,11 @@
                     comms (atom nil)]
                 [:div {:key (rand 1000000)
                        :style {:z-index "inherit"}}
-                  ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
-                 [:h1 (post :title)]
+                 [:h1
+                  {:on-click (fn []
+                               (. js/history pushState "" "" (str "?post=" (:id post)))
+                               (get-post (post :id)))} 
+                  (post :title)]
                  [:h2 (str (post :date) " / " (clojure.string/join "," (post :tags)))]
                  (m/component (m/md->hiccup (post :content)))
                  [:br]
@@ -413,7 +436,7 @@
 
     (fn a-pagecard []
 
-      (let [active (= @selectedpage label)
+      (let [active (= @selected-page label)
             zindex (deref (item :index)) ]
 
         [:div {:key (str "pagecard" label)}
@@ -450,7 +473,8 @@
                              (reset! blog-months nil)
                              (reset! blog-posts nil)
                              (reset! blog-project nil)
-                             (reset! selectedpage label)
+                             (reset! selected-post nil)
+                             (reset! selected-page label)
                            )}
            label]
           ;;pagecard submenu
@@ -580,18 +604,13 @@
                [(keyword k) v]))))
 
 
-(defn set-hash! [loc]
-  (set! (.-location js/window) loc))
-
-;;(set-hash! "/dip") ;; => http://localhost:3000/#/dip
-
-
 (defn start []
 
-  (reset! selectedpage "blog")
+  (reset! selected-page "blog")
 
   (let [params (parse-params)]
     (reset! mode-admin (params :admin))
+    (reset! selected-post (params :post))
     (reagent/render-component
      [page]
      (. js/document (getElementById "app"))))
