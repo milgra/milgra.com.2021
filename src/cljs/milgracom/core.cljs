@@ -7,7 +7,7 @@
             [cljs.pprint :as print :refer [cl-format]]
             [cljs-http.client :as http]))
 
-(defonce server-url "http://116.203.87.141")
+(defonce server-url (if js/goog.DEBUG "http://localhost:3000" "http://116.203.87.141"))
 ;;(defonce server-url "http://localhost:3000")
 (defonce monthnames ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"])
 
