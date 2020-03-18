@@ -22,11 +22,11 @@ todo :
 * convert to inst everywhere
 * css cleanup & refactor
 * stilusok kivezetese
+* increase comment counter
+* "loading" text stylize in html on startup
 
 * search field & functionality
 * dynamic page size based on window size to help mobile viewers
-* increase comment counter
-* admin should show up with actual date at new post
 * all posts admin page with delete button
 * allow access only from ip
 * insert go blocks into functions where possible
@@ -34,7 +34,6 @@ todo :
 * rossz code eseten kerje ujra code-ot vagy dobjon napi kvota lejartat
 * server csekkoljon minden parametert
 * tesztek
-* "loading" text stylize in html on startup
 * szerver nelkul hogy kezeli a site a hibakat?
 * heckelest hogy allja a szerver?
 * adott post/comment jojjon be ha parametert kap az index.html -> apps linkek mukodjenek

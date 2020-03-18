@@ -386,7 +386,9 @@
        (map (fn [post]
               [:div {:key (rand 1000000)
                      :style {:z-index "inherit"}
-                     :on-click (fn [event] (println "CLICK" ))}
+                     :on-click (fn [event]
+                                 (reset! blog-list nil)
+                                 (get-post (post :id)))}
                (str (subs (post :date) 0 10) " " (post :title))
                [:br][:br]])
             @blog-list)
