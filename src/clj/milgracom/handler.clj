@@ -4,6 +4,7 @@
             [compojure.core :refer :all]
             [compojure.route :as route]
             [clojure.data.json :as json]
+            [clojure.java.io :as io]
             [milgracom.database :as db]
             [crypto.password.scrypt :as password]
             [ring.util.response :as resp]
@@ -260,11 +261,12 @@
 (defroutes app-routes
   
   (GET "/" [] (resp/redirect "/index.html"))
-  (GET "/post/:id" [] (resp/redirect "/index.html"))
-  (GET "/projects" [] (resp/redirect "/index.html"))
-  (GET "/apps" [] (resp/redirect "/index.html"))
-  (GET "/games" [] (resp/redirect "/index.html"))
-  (GET "/protos" [] (resp/redirect "/index.html"))
+  (GET "/post/:id" [] (io/resource "public/index.html"))
+  (GET "/projects" [] (io/resource "public/index.html"))
+  (GET "/apps" [] (io/resource "public/index.html"))
+  (GET "/games" [] (io/resource "public/index.html"))
+  (GET "/protos" [] (io/resource "public/index.html"))
+  (GET "/admin" [] (io/resource "public/index.html"))
 
   (GET "/api-getmonths" [type] (json/write-str {:months (get-post-months type) :tags (get-post-tags type)}))
   (GET "/api-getpostsbydate" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
@@ -282,9 +284,8 @@
   (GET "/api-removepost" [pass id] (json/write-str {:result (remove-entity pass id)}))
   (GET "/api-removecomment" [pass id] (json/write-str {:result (remove-entity pass id)}))
   
-  (route/resources "/")
+  ;;(route/resources "/")
   (route/not-found "Not Found"))
-
 
 (def app
   (-> app-routes
@@ -292,7 +293,8 @@
                  :access-control-allow-methods [:post :get]
                  :access-control-allow-credentials "true"
                  :Access-Control-Allow-Headers "Content-Type, Accept, Authorization, Authentication, If-Match, If-None-Match, If-Modified-Since, If-Unmodified-Since")
-      (wrap-defaults (assoc-in site-defaults [:security :anti-forgery] false))))
+      (wrap-defaults (assoc-in site-defaults [:security :anti-forgery] false))
+      ))
 
 ;; init database on start
 (setup)
