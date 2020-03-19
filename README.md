@@ -18,9 +18,6 @@ start shadow-cljs repl and server for client side dev :
 
 todo :
 
-* stilusok kivezetese
-* "loading" text stylize in html on startup
-
 * increase comment counter
 * pagecard state - posts, projects, list
 * blog/apps/protos/games in url

@@ -1,6 +1,6 @@
 (ns milgracom.database)
 
-;; schemas
+; schemas
 
 (def post-schema
   [{:db/ident :post/title
@@ -56,7 +56,7 @@
     :db/doc "The date of the comment"}])
 
 
-;; queries
+; queries
 
 (def all-posts-q
   '[:find ?e
@@ -125,7 +125,7 @@
     [?e :comment/postid ?postid]])
 
 
-;; test data
+; test data
 
 (def first-posts
   [{:post/title "Emscripten"

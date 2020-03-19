@@ -13,7 +13,6 @@
 
 
 (defonce server-url (if js/goog.DEBUG "http://localhost:3000" "http://116.203.87.141"))
-;;(defonce server-url "http://localhost:3000")
 (defonce monthnames ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"])
 
 (defonce selected-page (atom nil))
@@ -112,18 +111,14 @@
   "returns a side menu button component with the proper contents for given label"
   [[index label]]
   (let [selected-item (atom nil)
-        ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) 2))
-        ;; spring animators 
         pos-spring (anim/spring pos {:mass 5.0 :stiffness 0.5 :damping 3.0})
         newpos (if (= @selected-item label) 40 30)]
     (fn a-leftmenubtn []
       [:div
-       ;; animation structure
        [anim/timeline
         (* 40 index)
         #(reset! pos newpos)]
-       ;; menucard start
        [:div
         {:id "rightmenubtn"
          :class "menubtn rightmenubtn"
@@ -154,18 +149,14 @@
   "returns a side menu button component with the proper contents for given label"
   [[index label]]
   (let [selected-item (atom nil)
-        ;; component-local reagent atoms for animation
         pos (reagent/atom (/ (.-innerWidth js/window) -2))
-        ;; spring animators 
         pos-spring (anim/spring pos {:mass 5.0 :stiffness 0.5 :damping 3.0})
         newpos (if (= @selected-item label) 40 30)]
     (fn a-leftmenubtn []
       [:div
-       ;; animation structure
        [anim/timeline
         (* 50 index)
         #(reset! pos newpos)]
-       ;; menucard start
        [:div
         {:id "a-leftmenubtn"
          :class "menubtn leftmenubtn"
@@ -183,8 +174,7 @@
                          (get-posts-by-date year month "blog" blog-posts))
                        :else
                        (let [project (nth @blog-posts index)]
-                         (reset! blog-project project))))
-         }
+                         (reset! blog-project project))))}
         label]])))
 
 
@@ -196,12 +186,12 @@
       (if items
         [:div
          [anim/timeline
-         (+ 280 (* 50 (count @lmenuitems)))
+         (+ 260 (* 50 (count @lmenuitems)))
           #(cond
              (not= @selected-post nil)
              (get-post @selected-post)
              (= @selected-page "blog")
-             ;; get first menu item and load posts for montj
+             ; get first menu item and load posts for month
              (let [[year month] (first @blog-months)]
                (get-posts-by-date year month "blog" blog-posts))
              :else
@@ -222,10 +212,7 @@
             (get-posts "app" lmenuitems rmenuitems blog-posts)
             (= @selected-page "protos")
             (get-posts "proto" lmenuitems rmenuitems blog-posts))
-          nil)
-
-        ))))
-
+          nil)))))
 
 (defn impressum []
   [:div {:class "impressum"}
@@ -236,7 +223,6 @@
   (let [nick (clojure.core/atom nil)
         text (clojure.core/atom nil)
         code (clojure.core/atom nil)]
-    ;;(fn []
       [:div
        [:div {:class "comments"}
         [:div {:style {:padding-right "20px" :cursor "pointer"}
@@ -302,8 +288,7 @@
                    [:div {:style {:cursor "pointer"}
                           :class "showcommentbtn"
                           :on-click (fn [event] (delete-comment (comment :id) @pass ))} "Delete comment"])
-                 [:hr]
-                 ])
+                 [:hr]])
               @comments))]))
 
 
@@ -319,7 +304,7 @@
              comms (atom nil)]
          [:div {:key (rand 1000000)}
           [:h1
-           ;;[:a {:href (str "/post/" (:id @blog-project))}
+           ;[:a {:href (str "/post/" (:id @blog-project))}
            (@blog-project :title)]
           [:h2 (clojure.string/join "," (@blog-project :tags))]
           [:br]
@@ -345,8 +330,7 @@
                     comms (atom nil)]
                 [:div {:key (rand 1000000)
                        :style {:z-index "inherit"}}
-                 [:h1
-                  [:a {:href (str "/post/" (:id post))} (post :title)]]                 
+                 [:h1 [:a {:href (str "/post/" (:id post))} (post :title)]]                 
                  [:h2 (str (clojure.string/replace (post :date) #"T" " ") " / " (clojure.string/join "," (post :tags)))]
                  [:br]
                  (m/component (m/md->hiccup (post :content)))
@@ -382,8 +366,7 @@
        )))
   
 
-(defonce menuitems (atom [
-                          {:color "#dff6df"
+(defonce menuitems (atom [{:color "#dff6df"
                            :posatom (reagent/atom 0)
                            :sizeatom (reagent/atom 0)
                            :label "apps"
@@ -412,23 +395,18 @@
   [index]
   (let [item (nth @menuitems index)
         label (item :label)
-       ;; component-local reagent atoms for animation
         pos (item :posatom)
         size (item :sizeatom)
-        ;; spring animators
         pos-spring (anim/spring pos {:mass 10.0 :stiffness 0.5 :damping 2.0})
-        size-spring (anim/spring size {:mass 3.0 :stiffness 0.5 :damping 2.0}) ]
-    
+        size-spring (anim/spring size {:mass 3.0 :stiffness 0.5 :damping 2.0})]
     (reset! pos (nth fixposes index))
     (reset! size (nth fixsizes index))
-
     (fn a-pagecard []
-
       (let [active (= @selected-page label)
             zindex (deref (item :index)) ]
 
         [:div {:key (str "pagecard" label)}
-         ;; pagecard start
+         ; pagecard start
          [:div
           {:key label
            :class "card"
@@ -436,16 +414,16 @@
                    :transform (str "translate(" @pos-spring "px)")
                    :width @size-spring
                    :z-index zindex}}
-          ;; pagecard button
+          ; pagecard button
           [:div {:key "cardbutton"
                  :class "verticaltext cardbutton"
                  :on-click (fn [e]
-                             ;; shift menuitems
+                             ; shift menuitems
                              (reset! menuitems
                                       (concat
                                        (filter #(not= (% :label) label) @menuitems)
                                        (filter #(= (% :label) label) @menuitems)))
-                             ;; repos
+                             ; repos
                              (doall
                               (map (fn [[idx elem]]
                                      (reset! (elem :posatom)(nth fixposes idx))
@@ -464,17 +442,17 @@
                              (reset! selected-page label)
                            )}
            label]
-          ;;pagecard submenu
+          ;pagecard submenu
           (if active [leftmenu])
           (if active [rightmenu])
-          ;;pagecard content
+          ;pagecard content
           (cond
             (and active (not= nil @blog-list)) [content-list]
             (and active (= label "blog")) [content-posts]
             (and active (= label "apps")) [content-projects "apps"]
             (and active (= label "games")) [content-projects "games"]
             (and active (= label "protos")) [content-projects "protos"])
-          ;;impressum
+          ;impressum
           ]]))))
 
 
@@ -609,13 +587,13 @@
 
 
 (defn ^:export init []
-  ;; init is called ONCE when the page loads
-  ;; this is called in the index.html and must be exported
-  ;; so it is available even in :advanced release builds
+  ; init is called ONCE when the page loads
+  ; this is called in the index.html and must be exported
+  ; so it is available even in :advanced release builds
   (start))
 
 
 (defn stop []
-  ;; stop is called before any code is reloaded
-  ;; this is controlled by :before-load in the config
+  ; stop is called before any code is reloaded
+  ; this is controlled by :before-load in the config
   (js/console.log "stop"))

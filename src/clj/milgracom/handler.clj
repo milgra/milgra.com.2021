@@ -14,7 +14,7 @@
 
 (defonce uri "datomic:dev://localhost:4334/milgracom")
 (defonce epass "$s0$f0801$ltUrt7mIR8BW90xbCpGe0Q==$sxNuunkgX7GuXuzjAEUXPUqVIq0U00CRUxJFG9MyP30=")
-;;(password/encrypt "password")
+;(password/encrypt "password")
 
 (defonce ip-to-result (atom []))
 (defonce number-names ["zero" "one" "two" "three" "four" "five" "six" "seven" "eight" "nine"])
@@ -85,7 +85,7 @@
                          (fn [[{date :post/date}]] [(+ 1900 (.getYear date)) (inc (.getMonth date))])
                          dates))))))
 
-;;(get-post-months "blog")
+;(get-post-months "blog")
 
 (defn get-post-tags
   "get all tags in posts"
@@ -95,7 +95,7 @@
         tags (d/q db/all-post-tags-by-type-q db dbtype)]
     (reduce (fn [res item] (into res ((first item) :post/tags)) ) #{} tags)))
 
-;;(get-post-tags "blog")
+;(get-post-tags "blog")
 
 (defn get-posts-for-month
   "get all posts for given year and month"
@@ -112,7 +112,7 @@
     (sort-by :post/date (map #(assoc % :post/date (subs (pr-str (% :post/date)) 7 26)) (map first posts)))
     ))
 
-;;(sort-by :post/date (get-posts-for-month "2020" "03" "blog"))
+;(get-posts-for-month "2020" "03" "blog")
 
 (defn get-posts-for-type
   "get all posts for given year and month"
@@ -124,9 +124,7 @@
     ))
 
 
-;;(get-posts-for-type "game")
-;;(str #inst "2019-12-30T01:01:01")
-
+;(get-posts-for-type "game")
 
 (defn get-posts-for-tag
   "get post titles for given tag"
@@ -136,7 +134,7 @@
     (reverse (sort-by :post/date (map #(assoc % :post/date (subs (pr-str (% :post/date)) 7 26)) (map first posts)))
     )))
 
-;;(get-posts-for-tag "Music")
+;(get-posts-for-tag "Music")
 
 (defn get-post
   [id]
@@ -148,7 +146,7 @@
         ]
     (list result)))
 
-;;(get-post "17592186045508")
+;(get-post "17592186045508")
 
 (defn get-post-comments
   "returns comments for give post id"
@@ -160,9 +158,7 @@
     (sort-by :comment/date (map #(assoc % :comment/date (subs (pr-str (% :comment/date)) 7 26)) (map first comments)))
     ))
 
-
-;;(get-post-comments "17592186045425")
-
+;(get-post-comments "17592186045425")
 
 (defn add-post
   "add post to database"
@@ -184,7 +180,6 @@
 (defn update-post
   "update post in database"
   [pass id title date tags typestr content]
-  ;; todo check input validity
   (if (and (password/check pass epass) (some #(= % typestr) types))
     (let [dbtype (keyword typestr)
           dbid (Long/parseLong id)
@@ -218,7 +213,7 @@
     (let [numcode (Integer/parseInt code)
           clientip (get-client-ip request)
           checks (filter (fn [{ip :ip result :result}] (and (= ip clientip) (= result numcode)))  @ip-to-result)]
-      ;; check validity
+      ; check validity
       (if (> (count checks) 0)
         (let [dbpostid (Long/parseLong postid)
               data [{:comment/postid dbpostid
@@ -249,16 +244,17 @@
         namea (nth number-names numa)
         nameb (nth number-names numb)
         items (count @ip-to-result)]
-    ;; remove old items to keep memory clean
+    ; remove old items to keep memory clean
     (if (> items 10) (reset! ip-to-result (subvec @ip-to-result (- items 10))))
-    ;; add new item
+    ; add new item
     (swap! ip-to-result conj {:ip ip :result (+ numa numb)})
     (str "How much is " namea " plus " nameb "?")))
 
-;; (generate-riddle "156.45.67.66")  TODO move this to tests
-
+; (generate-riddle "156.45.67.66")  TODO move this to tests
 
 (defroutes app-routes
+
+  ; resource related
   
   (GET "/" [] (resp/redirect "/index.html"))
   (GET "/post/:id" [] (io/resource "public/index.html"))
@@ -268,6 +264,8 @@
   (GET "/protos" [] (io/resource "public/index.html"))
   (GET "/admin" [] (io/resource "public/index.html"))
 
+  ; api related
+  
   (GET "/api-getmonths" [type] (json/write-str {:months (get-post-months type) :tags (get-post-tags type)}))
   (GET "/api-getpostsbydate" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
   (GET "/api-getpostsbytag" [tag] (json/write-str {:posts (get-posts-for-tag tag)}))
@@ -277,7 +275,7 @@
   (GET "/api-genriddle" request (json/write-str {:question (generate-riddle (get-client-ip request))}))
   (GET "/api-addcomment" [postid nick text code :as request] (json/write-str {:result (add-comment postid nick text code request)}))
 
-  ;; admin related
+  ; admin related
   
   (POST "/api-addpost" [pass title date tags type content] (json/write-str {:result (add-post pass title date tags type  content)}))
   (POST "/api-updatepost" [pass id title date tags type content] (json/write-str {:result (update-post pass id title date tags type content)}))
@@ -296,5 +294,5 @@
       (wrap-defaults (assoc-in site-defaults [:security :anti-forgery] false))
       ))
 
-;; init database on start
+; init database on start
 (setup)
