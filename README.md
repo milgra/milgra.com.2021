@@ -18,9 +18,7 @@ start shadow-cljs repl and server for client side dev :
 
 todo :
 
-* valid hour:minute on post edit
 * images fix!
-* convert to inst everywhere
 * css cleanup & refactor
 * stilusok kivezetese
 * increase comment counter
@@ -30,13 +28,7 @@ todo :
 * search field & functionality
 * dynamic page size based on window size to help mobile viewers
 * all posts admin page with delete button
-* allow access only from ip
-* insert go blocks into functions where possible
+* allow access only from milgra.com when dns is ready
 * break up code, create component namespaces
-* rossz code eseten kerje ujra code-ot vagy dobjon napi kvota lejartat
-* server csekkoljon minden parametert
-* tesztek
-* szerver nelkul hogy kezeli a site a hibakat?
-* heckelest hogy allja a szerver?
-* adott post/comment jojjon be ha parametert kap az index.html -> apps linkek mukodjenek
-* parameter validity checking (length, year-month format, etc)
+* server should check all parameters
+* server side tests on temporary database

@@ -323,7 +323,7 @@
                  [:h3
                   (comment :nick)
                   "|"
-                  (comment :date)]
+                  (clojure.string/replace (comment :date) #"T" " ")]
                  [:div (comment :content)]
                  (if @mode-admin
                    [:div {:style {:cursor "pointer"}
@@ -374,7 +374,7 @@
                   ;;             (get-post (post :id)))}
                   [:a {:href (str "/post/" (:id post))} (post :title)]]
                  
-                 [:h2 (str (post :date) " / " (clojure.string/join "," (post :tags)))]
+                 [:h2 (str (clojure.string/replace (post :date) #"T" " ") " / " (clojure.string/join "," (post :tags)))]
                  (m/component (m/md->hiccup (post :content)))
                  [:br]
                  [comments post comms showcomments showeditor riddle]
@@ -504,7 +504,7 @@
 
 (defn newpost []
   (let [title (clojure.core/atom (if @posttoedit (@posttoedit :title) "title"))
-        date (clojure.core/atom (if @posttoedit (str (clojure.core/subs (@posttoedit :date) 0 10) "T00:00:00") "2010-01-01T10:10:00" ))
+        date (clojure.core/atom (if @posttoedit (@posttoedit :date) (subs (pr-str (js/Date.)) 7 26) ))
         type (clojure.core/atom (if @posttoedit (@posttoedit :type) "type"))
         tags (clojure.core/atom (if @posttoedit (clojure.string/join "," (@posttoedit :tags)) "tags,tags"))
         content (clojure.core/atom (if @posttoedit (@posttoedit :content) "content"))
@@ -637,9 +637,8 @@
                (fn [e]
                  (. e preventDefault)
                  (let [path (.getPath (.parse Uri (.-href (.-target e))))
-                       [_ mainroute subroute ] (clojure.string/split path #"/" )
-                       ]
-                   (println "onclick" path)
+                       [_ mainroute subroute ] (clojure.string/split path #"/" )]
+
                    (if (= mainroute "post")
                      (get-post subroute))
 

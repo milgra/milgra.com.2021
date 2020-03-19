@@ -108,11 +108,10 @@
         start (clojure.instant/read-instant-date (format "%d-%02d-01T00:00:00" dbyear dbmonth))
         end (clojure.instant/read-instant-date  (format "%d-%02d-01T00:00:00" endyear endmonth))
         posts (d/q db/posts-between-dates-by-type-q db start end dbtype)]
-    (sort-by :post/date (map (fn [[{date :post/date :as val}]]
-           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss") date)))
-         posts))))
+    (sort-by :post/date (map #(assoc % :post/date (subs (pr-str (% :post/date)) 7 26)) (map first posts)))
+    ))
 
-;;(sort-by :post/date (get-posts-for-month "2016" "10" "blog"))
+;;(sort-by :post/date (get-posts-for-month "2020" "03" "blog"))
 
 (defn get-posts-for-type
   "get all posts for given year and month"
@@ -120,9 +119,9 @@
   (let [dbtype (keyword type)
         db (d/db conn)
         posts (d/q db/all-posts-all-data-by-type-q db dbtype)]
-    (sort-by :post/date (map (fn [[{date :post/date :as val}]]
-           (assoc val :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss") date)))
-         posts))))
+    (sort-by :post/date (map #(assoc % :post/date (subs (pr-str (% :post/date)) 7 26)) (map first posts)))
+    ))
+
 
 ;;(get-posts-for-type "game")
 ;;(str #inst "2019-12-30T01:01:01")
@@ -146,8 +145,6 @@
         post (into {} (seq entity))
         result (assoc post :post/date (subs (pr-str (post :post/date)) 7 26))
         ]
-    ;;(assoc postmap :post/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss") (:post/date postmap)))
-
     (list result)))
 
 ;;(get-post "17592186045508")
@@ -158,11 +155,12 @@
   (let [dbpostid (Long/parseLong postid)
         db (d/db conn)
         comments (d/q db/comments-for-post-q db dbpostid)]
-    (reverse (map (fn [[{date :comment/date :as val}]]
-           (assoc val :comment/date (.format (java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss") date)))
-    comments))))
 
-;;(get-post-comments 17592186045425)
+    (sort-by :comment/date (map #(assoc % :comment/date (subs (pr-str (% :comment/date)) 7 26)) (map first comments)))
+    ))
+
+
+;;(get-post-comments "17592186045425")
 
 
 (defn add-post
