@@ -284,7 +284,7 @@
   (GET "/api-removepost" [pass id] (json/write-str {:result (remove-entity pass id)}))
   (GET "/api-removecomment" [pass id] (json/write-str {:result (remove-entity pass id)}))
   
-  ;;(route/resources "/")
+  (route/resources "/")
   (route/not-found "Not Found"))
 
 (def app

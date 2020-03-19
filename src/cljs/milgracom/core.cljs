@@ -631,12 +631,13 @@
 
 (events/listen js/document "click"
                (fn [e]
-                 (. e preventDefault)
                  (let [path (.getPath (.parse Uri (.-href (.-target e))))
                        [_ mainroute subroute ] (clojure.string/split path #"/" )]
 
                    (if (= mainroute "post")
-                     (get-post subroute))
+                     (do
+                       (. e preventDefault)
+                       (get-post subroute)))
 
                    (when path
                      (. js/history pushState "" "" (.-href (.-target e)))))))
