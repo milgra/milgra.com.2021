@@ -262,21 +262,27 @@
 (defroutes app-routes
   
   (GET "/" [] (resp/redirect "/index.html"))
-  (GET "/months" [type] (json/write-str {:months (get-post-months type) :tags (get-post-tags type)}))
-  (GET "/postsbydate" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
-  (GET "/postsbytag" [tag] (json/write-str {:posts (get-posts-for-tag tag)}))
-  (GET "/posts" [year month type] (json/write-str {:posts (get-posts-for-type type) :tags (get-post-tags type)}))
-  (GET "/post" [id] (json/write-str {:posts (get-post id)}))
-  (GET "/comments" [postid] (json/write-str {:comments (get-post-comments postid)}))
-  (GET "/genriddle" request (json/write-str {:question (generate-riddle (get-client-ip request))}))
-  (GET "/newcomment" [postid nick text code :as request] (json/write-str {:result (add-comment postid nick text code request)}))
+  (GET "/post/:id" [] (resp/redirect "/index.html"))
+  (GET "/projects" [] (resp/redirect "/index.html"))
+  (GET "/apps" [] (resp/redirect "/index.html"))
+  (GET "/games" [] (resp/redirect "/index.html"))
+  (GET "/protos" [] (resp/redirect "/index.html"))
+
+  (GET "/api-getmonths" [type] (json/write-str {:months (get-post-months type) :tags (get-post-tags type)}))
+  (GET "/api-getpostsbydate" [year month type] (json/write-str {:posts (get-posts-for-month year month type)}))
+  (GET "/api-getpostsbytag" [tag] (json/write-str {:posts (get-posts-for-tag tag)}))
+  (GET "/api-getposts" [year month type] (json/write-str {:posts (get-posts-for-type type) :tags (get-post-tags type)}))
+  (GET "/api-getpost" [id] (json/write-str {:posts (get-post id)}))
+  (GET "/api-getcomments" [postid] (json/write-str {:comments (get-post-comments postid)}))
+  (GET "/api-genriddle" request (json/write-str {:question (generate-riddle (get-client-ip request))}))
+  (GET "/api-addcomment" [postid nick text code :as request] (json/write-str {:result (add-comment postid nick text code request)}))
 
   ;; admin related
   
-  (POST "/newpost" [pass title date tags type content] (json/write-str {:result (add-post pass title date tags type  content)}))
-  (POST "/updatepost" [pass id title date tags type content] (json/write-str {:result (update-post pass id title date tags type content)}))
-  (GET "/delpost" [pass id] (json/write-str {:result (remove-entity pass id)}))
-  (GET "/delcomment" [pass id] (json/write-str {:result (remove-entity pass id)}))
+  (POST "/api-addpost" [pass title date tags type content] (json/write-str {:result (add-post pass title date tags type  content)}))
+  (POST "/api-updatepost" [pass id title date tags type content] (json/write-str {:result (update-post pass id title date tags type content)}))
+  (GET "/api-removepost" [pass id] (json/write-str {:result (remove-entity pass id)}))
+  (GET "/api-removecomment" [pass id] (json/write-str {:result (remove-entity pass id)}))
   
   (route/resources "/")
   (route/not-found "Not Found"))

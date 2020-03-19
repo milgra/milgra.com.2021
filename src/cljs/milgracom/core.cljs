@@ -5,7 +5,12 @@
             [clojure.string :as str]
             [clojure.core.async :as async]
             [cljs.pprint :as print :refer [cl-format]]
-            [cljs-http.client :as http]))
+            [cljs-http.client :as http]
+            [goog.events :as events]
+            [goog.history.EventType :as HistoryEventType])            
+  (:import goog.History
+           goog.Uri))
+
 
 (defonce server-url (if js/goog.DEBUG "http://localhost:3000" "http://116.203.87.141"))
 ;;(defonce server-url "http://localhost:3000")
@@ -32,7 +37,7 @@
 
 (defn get-posts-by-date [year month type blog-posts]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get (str server-url "/postsbydate")
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getpostsbydate")
                                                     {:query-params {:year year :month month :type type}}))
           posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))]
       (reset! blog-posts (reverse posts)))))
@@ -41,7 +46,7 @@
 (defn get-posts-by-tag [tag]
   (reset! blog-tag tag)
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get (str server-url "/postsbytag")
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getpostsbytag")
                                                     {:query-params {:tag tag}}))
           posts (:posts (js->clj (.parse js/JSON body) :keywordize-keys true))]
       (reset! blog-list posts))))
@@ -49,7 +54,7 @@
 
 (defn get-posts [type lmenuitems rmenuitems blog-posts]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get (str server-url "/posts")
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getposts")
                                                     {:query-params {:type type}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           posts (reverse (result :posts))
@@ -62,7 +67,7 @@
 
 (defn get-post [id]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get (str server-url "/post")
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getpost")
                                                     {:query-params {:id id}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           posts (result :posts)]
@@ -71,7 +76,7 @@
 
 (defn get-months [type lmenuitems rmenuitems blog-months blog-posts]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get (str server-url "/months")
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getmonths")
                                                     {:query-params {:type type}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           months (result :months)
@@ -88,7 +93,7 @@
 
 (defn get-comments [postid comments]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get (str server-url "/comments")
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getcomments")
                                                     {:query-params {:postid postid}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           ncomments (result :comments)]
@@ -97,7 +102,7 @@
 
 (defn delete-comment [id pass]
   (async/go
-    (let [{:keys [status body]} (async/<! (http/get (str server-url "/delcomment")
+    (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-removecomment")
                                                     {:query-params {:id id :pass pass}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           status (result :result)])))
@@ -175,6 +180,7 @@
                      (reset! blog-list nil)
                      (reset! selected-post nil)
                      (reset! selected-item label)
+                     (. js/history pushState "" "" "/")
                      (cond
                        (= @selected-page "blog")
                        (let [[year month] (nth @blog-months index)]
@@ -257,7 +263,7 @@
                :on-click (fn []
                            ((fn []
                               (async/go
-                                (let [{:keys [status body]} (async/<! (http/get (str server-url "/genriddle")))
+                                (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-genriddle")))
                                       result (js->clj (.parse js/JSON body) :keywordize-keys true)
                                       question (result :question)]
                                   (swap! showeditor not)
@@ -299,7 +305,7 @@
                           :text-align "center"}
                   :on-click (fn [event]
                               (async/go
-                                (let [{:keys [status body]} (async/<! (http/get (str server-url "/newcomment")
+                                (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-addcomment")
                                                                                 {:query-params {:postid (post :id) :nick @nick :text @text :code @code}}))
                                       result (js->clj (.parse js/JSON body) :keywordize-keys true)
                                       status (result :result)]
@@ -363,10 +369,11 @@
                 [:div {:key (rand 1000000)
                        :style {:z-index "inherit"}}
                  [:h1
-                  {:on-click (fn []
-                               (. js/history pushState "" "" (str "?post=" (:id post)))
-                               (get-post (post :id)))} 
-                  (post :title)]
+                  ;;{:on-click (fn []
+                  ;;             (. js/history pushState "" "" (str "?post=" (:id post)))
+                  ;;             (get-post (post :id)))}
+                  [:a {:href (str "/post/" (:id post))} (post :title)]]
+                 
                  [:h2 (str (post :date) " / " (clojure.string/join "," (post :tags)))]
                  (m/component (m/md->hiccup (post :content)))
                  [:br]
@@ -501,7 +508,7 @@
         type (clojure.core/atom (if @posttoedit (@posttoedit :type) "type"))
         tags (clojure.core/atom (if @posttoedit (clojure.string/join "," (@posttoedit :tags)) "tags,tags"))
         content (clojure.core/atom (if @posttoedit (@posttoedit :content) "content"))
-        url (if @posttoedit (str server-url "/updatepost") (str server-url "/newpost"))
+        url (if @posttoedit (str server-url "/api-updatepost") (str server-url "/api-addpost"))
         id (if @posttoedit (@posttoedit :id) 0)]
   [:div {:style {:position "absolute" :width "100%"}}
    [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
@@ -545,7 +552,7 @@
    [:div {:style {:cursor "pointer" :width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}
           :on-click (fn [event]
                       (async/go
-                        (let [{:keys [status body]} (async/<! (http/get (str server-url "/delpost")
+                        (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-removepost")
                                                                         {:query-params {:id id :pass @pass}}))
                               result (js->clj (.parse js/JSON body) :keywordize-keys true)
                               status (result :result)]
@@ -596,27 +603,48 @@
 
 (defn parse-params
   "Parse URL parameters into a hashmap"
-  []
+  [url]
   (let [param-strs (->
-                    (.-location js/window)
+                    url
                     (clojure.string/split #"\?")
                     last
                     (clojure.string/split #"\&"))]
     (into {} (for [[k v] (map #(clojure.string/split % #"=") param-strs)]
                [(keyword k) v]))))
 
+(defn parse-routes!
+  [url]
+  (let [path (.getPath (.parse Uri url))
+        [_ mainroute subroute ] (clojure.string/split path #"/" )
+        ]
+    (println "parse-routes" path)
+    (if (= mainroute "admin")
+      (reset! mode-admin true))
+    (if (= mainroute "post")
+      (reset! selected-post subroute))))
+
 
 (defn start []
 
   (reset! selected-page "blog")
+  (parse-routes! (.-location js/window))
+  (reagent/render-component
+   [page]
+   (. js/document (getElementById "app"))))
 
-  (let [params (parse-params)]
-    (reset! mode-admin (params :admin))
-    (reset! selected-post (params :post))
-    (reagent/render-component
-     [page]
-     (. js/document (getElementById "app"))))
-  )
+
+(events/listen js/document "click"
+               (fn [e]
+                 (. e preventDefault)
+                 (let [path (.getPath (.parse Uri (.-href (.-target e))))
+                       [_ mainroute subroute ] (clojure.string/split path #"/" )
+                       ]
+                   (println "onclick" path)
+                   (if (= mainroute "post")
+                     (get-post subroute))
+
+                   (when path
+                     (. js/history pushState "" "" (.-href (.-target e)))))))
 
 
 (defn ^:export init []

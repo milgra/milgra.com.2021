@@ -19,11 +19,13 @@ start shadow-cljs repl and server for client side dev :
 todo :
 
 * valid hour:minute on post edit
+* images fix!
 * convert to inst everywhere
 * css cleanup & refactor
 * stilusok kivezetese
 * increase comment counter
 * "loading" text stylize in html on startup
+* pagecard state - posts, projects, list
 
 * search field & functionality
 * dynamic page size based on window size to help mobile viewers

@@ -1,0 +1,9 @@
+FirstClass
+{
+
+	void sayHello( )
+	{
+		printf( "\nHello, this is FirstClass\n" );
+	}
+
+}
