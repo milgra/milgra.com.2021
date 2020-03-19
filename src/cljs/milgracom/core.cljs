@@ -196,7 +196,7 @@
       (if items
         [:div
          [anim/timeline
-         (+ 50 (* 50 (count @lmenuitems)))
+         (+ 280 (* 50 (count @lmenuitems)))
           #(cond
              (not= @selected-post nil)
              (get-post @selected-post)
@@ -261,60 +261,35 @@
                              (reset! page-state :newpost)
                              (reset! posttoedit post))}
            "[Edit post]"])]
-       
+
        (if @showeditor
-         [:div
-          [:div {:style {:text-align "center"}}
-           
-           [:div {:style {:padding-top "20px"
-                          :padding-bottom "20px"
-                          :width "100%"
-                          }} "Nick"]
-
-           [:input {:style {:width "150px"
-                            :display "block"
-                            }
-                    :on-change #(reset! nick (-> % .-target .-value))}]
-
-           [:div {:style {:width "100%"
-                          :padding-top "20px"
-                          :padding-bottom "20px"}} "Comment"]
-
-           [:textarea {:style {:width "100%"
-                               :height "100px"}
-                               :on-change #(reset! text (-> % .-target .-value))}]
-
-           [:div {:style {:width "100%"
-                          :padding-top "20px"
-                          :padding-bottom "20px"}} @riddle]
-
-           [:input {:style {:width "150px"  
-                            :display "block"
-                            }
-                    
-                    :on-change #(reset! code (-> % .-target .-value))}]
-           [:br]
-           [:div {:class "showcommentbtn"
-                  
-                  :style {:cursor "pointer"
-                          :width "100%"
-                         
-                          }
-
-                  :on-click (fn [event]
-                              (async/go
-                                (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-addcomment")
-                                                                                {:query-params {:postid (post :id) :nick @nick :text @text :code @code}}))
-                                      result (js->clj (.parse js/JSON body) :keywordize-keys true)
-                                      status (result :result)]
-                                  (if (= status "Invalid code")
-                                    (reset! riddle "Invalid result, please try again later")
-                                    (do
-                                      (get-comments (post :id) comments)
-                                      (reset! showcomments true)
-                                      (swap! showeditor not))))))}
-            "Send Comment"]
-           ]])
+         [:div {:style {:text-align "center"}}
+          [:br]
+          [:div {:style {:width "100%" }} "Nick"]
+          [:input {:style {:width "150px"}
+                   :on-change #(reset! nick (-> % .-target .-value))}]
+          [:div "Comment"]
+          [:textarea {:style {:width "100%" :height "100px"}
+                      :on-change #(reset! text (-> % .-target .-value))}]
+          [:div @riddle]
+          [:input {:style {:width "150px"}
+                   :on-change #(reset! code (-> % .-target .-value))}]
+          [:br]
+          [:div {:class "showcommentbtn"
+                 :style {:cursor "pointer"}
+                 :on-click (fn [event]
+                             (async/go
+                               (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-addcomment")
+                                                                               {:query-params {:postid (post :id) :nick @nick :text @text :code @code}}))
+                                     result (js->clj (.parse js/JSON body) :keywordize-keys true)
+                                     status (result :result)]
+                                 (if (= status "Invalid code")
+                                   (reset! riddle "Invalid result, please try again later")
+                                   (do
+                                     (get-comments (post :id) comments)
+                                     (reset! showcomments true)
+                                     (swap! showeditor not))))))}
+           "Send Comment"]])
        (if (and @showcomments @comments)
          (map (fn [comment]
                 [:div {:key (rand 1000000)}
@@ -460,8 +435,7 @@
            :style {:background (item :color)
                    :transform (str "translate(" @pos-spring "px)")
                    :width @size-spring
-                   :z-index zindex
-                   }}
+                   :z-index zindex}}
           ;; pagecard button
           [:div {:key "cardbutton"
                  :class "verticaltext cardbutton"
@@ -512,28 +486,29 @@
         content (clojure.core/atom (if @posttoedit (@posttoedit :content) "content"))
         url (if @posttoedit (str server-url "/api-updatepost") (str server-url "/api-addpost"))
         id (if @posttoedit (@posttoedit :id) 0)]
-  [:div {:style {:position "absolute" :width "100%"}}
-   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Title"]
+  [:div {:style {:position "absolute" :width "100%" :text-align "center"}}
+   [:br]
+   [:div "Title"]
    [:input {:default-value @title
-            :style {:width "300px" :display "block" :margin-left "auto" :margin-right "auto"}
+            :style {:width "300px"}
             :on-change #(reset! title (-> % .-target .-value))}]
-   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Date"]
+   [:div "Date"]
    [:input {:default-value (if @date @date "2015-12-05T00:00:00")
-            :style {:width "200px" :display "block" :margin-left "auto" :margin-right "auto"}
+            :style {:width "200px"}
             :on-change #(reset! date (-> % .-target .-value))}]
-   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Tags"]
+   [:div "Tags"]
    [:input {:default-value @tags
-            :style {:width "300px" :display "block" :margin-left "auto" :margin-right "auto"}
+            :style {:width "300px"}
             :on-change #(reset! tags (-> % .-target .-value))}]
-   [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Type"]
+   [:div "Type"]
    [:input {:default-value @type
-            :style {:width "300px" :display "block" :margin-left "auto" :margin-right "auto"}
+            :style {:width "300px"}
             :on-change #(reset! type (-> % .-target .-value))}]
-   [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Post"]
+   [:div "Post"]
    [:textarea {:default-value @content
-               :style {:width "100%" :height "500px"}
+               :style {:width "100%" :height "400px"}
                :on-change #(reset! content (-> % .-target .-value))}]
-   [:div {:style {:cursor "pointer" :width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}
+   [:div {:style {:cursor "pointer"}
           :on-click (fn [event]
                         (async/go
                           (let [{:keys [status body]}
@@ -550,8 +525,8 @@
                               (reset! page-state :normal))
                               (js/alert status)))
                       )} "Send"]
-
-   [:div {:style {:cursor "pointer" :width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}
+   [:br][:br]
+   [:div {:style {:cursor "pointer"}
           :on-click (fn [event]
                       (async/go
                         (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-removepost")
@@ -568,17 +543,7 @@
 (defn page []
   "returns a page component"
   (fn []
-    [:div {:key "pagecomp"
-           :style {:position "absolute"
-                   :width "900px"
-                   :left 0
-                   :right 0
-                   :top 0
-                   :bottom 0
-                   :border "0px"
-                   :margin-left "auto"
-                   :margin-right "auto"
-                   :background "none"}}
+    [:div {:key "page" :class "page"}
      (cond
        (= @page-state :newpost)
        [newpost]
@@ -586,12 +551,10 @@
        [:div {:id "pagecompbody"}      
         (doall (map (fn [index] ^{:key (str "card" index)} [pagecard index]) (range 4) ))])
 
-     [:div {:key "logo"
-            :class "verticaltext logo"}
+     [:div {:key "logo":class "verticaltext logo"}
       [:div {:class "logobutton"} "milgra.com"]]
      (if @mode-admin
-       [:div {:style {:position "absolute"
-                      :right "-110px"}}
+       [:div {:style {:position "absolute" :right "-110px"}}
         [:input {:style {:width "100px"}
                  :on-change #(reset! pass (-> % .-target .-value))
                  :type "password" }]
