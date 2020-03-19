@@ -1,217 +1,164 @@
-/* some style */
+/* default elements */
 
 body {
-    margin : 0px;
-    padding : 0;
+    color: #003300;
     background-color : #eeffee;
+
+    margin : 0px;
+    padding : 0px;
+    
     text-shadow: 1px 1px 3px #AAAAAA;   
+    text-align: justify;
+
+    font-size : 18px;
+    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
+
+    overflow-x : hidden;
 }
 
+/* remove underline from links ( post titles ) */
 a {
     color: #003300;
-    text-decoration: none;
+    text-decoration : none;
 }
 
-hr {
-    border: 0;
-    height: 1px;
-    color : #003300;
-    background-color : #003300;
-    box-shadow: 0 0px 5px 0 rgba(0, 0, 0, 0.2);
+/* post title */
+h1 {
+    font-size : 27px;
+    font-weight : normal;
 }
 
+/* post date and tags */
+h2 {
+    font-size : 14px;
+    font-weight : normal;
+}
+
+/* center embedded youtube videos*/
 iframe {
-    display: block;
-    margin: auto auto;
+    display : block;
+    margin : auto auto;
 }
 
-input {
-    background: #FFFFFF44;
-    border: none;
-    border-bottom: 2px solid white;
-    font-size : 1.0em;
-    font-weight : 400;
-    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-    box-shadow: 0px 0px 10px 0 rgba(0, 0, 0, 0.2);
-    padding : 5px;
-    box-sizing: border-box;
+/* horizontal line at the end of posts */
+hr {
+    border : 0;
+    height : 1px;
+    background-color : #003300;
+    box-shadow : 0 0px 5px 0 rgba(0, 0, 0, 0.2);
 }
 
-textarea {
-    background: #FFFFFF44;
-    border: none;
-    border-bottom: 2px solid white;
-    font-size : 1.0em;
-    font-weight : 400;
-    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
+/* comment input and admin post new/edit input field */
+textarea, input {
+    background : #FFFFFF44;
     border : none;
     border-bottom : 2px solid white;
-    box-shadow: 0px 0px 10px 0 rgba(0, 0, 0, 0.2);
+    box-shadow : 0px 0px 10px 0 rgba(0, 0, 0, 0.2);
     padding : 5px;
     box-sizing: border-box;
-}
-
-.card {
-    background : #EEEEEE;
-    padding : 0px;
-    color : #FFFFFF;
-    margin : 0px;
-    padding-bottom : 10px;
-    position : absolute;
-    min-height : 99vh;
-    box-shadow: 0 0px 20px 0 rgba(0, 0, 0, 0.3);
-    display:inline-block;
-}
-
-.cardbutton {
-    cursor: pointer;
-    background : none;
-    padding : 0;
-    position: absolute;
-    right: 10px;
-    top: -5px;
-    display: inline-block;
-    font-size : 1.5em;
-    font-weight : 400;
+    /* doesn't inherit body font settings, have to reset here */
+    font-size : 18px;
     font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-    border : none;
-    text-align: right;
-    text-shadow: 1px 1px 3px #555555;   
-    color : #000033;
-    transform-origin: bottom right;
-    transform: rotate(-90deg);
+    margin-left: auto;
+    margin-right: auto;
+
 }
 
+/* custom classes */
 
-.leftmenubtn {
-    cursor: pointer;
-    vertical-align: middle;
-    padding:8px;
-    width : 142px;
-    position: relative;
-    left: 0px;
-    top: -20px;
-    font-size : 1.0em;
-    font-weight : 400;
-    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-    border : none;
-    text-align: right;
-    text-shadow: 1px 1px 3px #555555;   
-    color : #000033;
-    box-shadow: 0 0px 5px 0 rgba(0, 0, 0, 0.2);
+.verticaltext {
+    top : -5px;
+    font-size : 27px;
+    transform : rotate(-90deg);
+    transform-origin : bottom right;
 }
-
-
-.rightmenubtn {
-    cursor: pointer;
-    vertical-align: middle;
-    white-space: nowrap;
-    padding:8px;
-    display:inline-block;
-    position: relative;
-    left: 0px;
-    top: -20px;
-    font-size : 1.0em;
-    font-weight : 400;
-    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-    border : none;
-    text-align: left;
-    text-shadow: 1px 1px 3px #555555;   
-    color : #000033;
-    box-shadow: 0 0px 5px 0 rgba(0, 0, 0, 0.2);
-}
-
 
 .logo {
     position : relative;
-    margin-top : -10px;
     right : 910px;
-    top : -5px;
-    transform-origin: bottom right;
-    transform: rotate(-90deg);
     float : right;
-    font-size : 1.5em;
-    font-weight : 400;
-    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-    text-shadow: 1px 1px 3px #555555;
     color : #000033;
-    display:flex;
-    flex-wrap: wrap;
-    justify-content: left ; /* for horizontal aligning of child divs */
-    align-items : left ; /* for vertical aligning */
+    display :flex;
+    flex-wrap : wrap;
+    align-items : left;
+    justify-content : left;
 }
 
-.logobutton
-{
+.cardbutton {
     cursor : pointer;
-    margin-left : 10px;
-    margin-right : 10px;
+    position : absolute;
+    right : 10px;
+    display : inline-block;
 }
 
-.adminbutton
-{
+.card {
+    position : absolute;
+    min-height : 100vh;
+    box-shadow : 0 0px 20px 0 rgba(0, 0, 0, 0.3);
+    display : inline-block;
+}
+
+.menubtn {
     cursor : pointer;
-    padding : 10px;
-    background-color : #66FF6655;
-    box-shadow: 2px 2px 5px 0 rgba(0, 0, 0, 0.2);
+    vertical-align : middle;
+    padding : 8px;
+    position : relative;
+    font-weight : 400;
+    box-shadow : 0 0px 5px 0 rgba(0, 0, 0, 0.2);
+}
+
+.leftmenubtn {
+    width : 142px;
+    left : 0px;
+    top : -20px;
+    text-align : right;
+}
+
+.rightmenubtn {
+    white-space : nowrap;
+    display : inline-block;
+    left : 0px;
+    top : -20px;
+    border : none;
+    text-align : left;
+}
+
+.rightmenu {
+    position: absolute;
+    top: 200px;
+    left: 700px;
+}
+
+.leftmenu {
+    position: absolute;
+    top: 200px;
+    left: -180px;
 }
 
 .content {
-    background : "none";
-    box-sizing: border-box;
+    box-sizing : border-box;
     width : 100%;
-    padding : 40px;
-    padding-top : 0px;
-    padding-bottom : 0px;
-    color : #000000;
-    font-size : 0.9em;
-    font-weight : 400;
-    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-    display:inline-block;
-}
-
-.impressum {
-    #position : absolute;
-    color : #000000;
-    background : none;
-    padding : 5px;
-    margin : 0px;
-    width : 100%;
-    bottom : 0px;
-    font-size : 0.9em;
-    font-weight : 400;
-    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-    text-align : center;
-
+    padding : 7px 40px 0px 40px;
+    display : inline-block;
 }
 
 .comments {
-    color : #000000;
     width : 100%;
-    font-size : 1em;
-    font-weight : 400;
-    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     text-align : center;
-    display:flex;
-    flex-wrap: wrap;
-    justify-content: center ; /* for horizontal aligning of child divs */
-    align-items : center ; /* for vertical aligning */
+    display : flex;
+    flex-wrap : wrap;
+    justify-content : center;
+    align-items : center;
 }
 
-
-h1 {
-    font-size : 1.5em;
-    font-weight : bold;
-    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
+.impressum {
+    padding : 10px;
+    text-align : center;
 }
 
-
-h2 {
-    font-size : 0.9em;
-    font-weight : 400;
-    font-family : -apple-system,BlinkMacSystemFont,Avenir,Avenir Next,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-}
-
-p {
-    text-align: justify;
+.adminbutton {
+    cursor : pointer;
+    padding : 10px;
+    background-color : #66FF6655;
+    box-shadow : 2px 2px 5px 0 rgba(0, 0, 0, 0.2);
 }

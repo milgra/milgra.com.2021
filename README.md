@@ -18,7 +18,6 @@ start shadow-cljs repl and server for client side dev :
 
 todo :
 
-* css cleanup & refactor
 * stilusok kivezetese
 * "loading" text stylize in html on startup
 

@@ -118,7 +118,7 @@
         pos-spring (anim/spring pos {:mass 5.0 :stiffness 0.5 :damping 3.0})
         newpos (if (= @selected-item label) 40 30)]
     (fn a-leftmenubtn []
-      [:div {:class "a-leftmenubtn"}
+      [:div
        ;; animation structure
        [anim/timeline
         (* 40 index)
@@ -126,14 +126,13 @@
        ;; menucard start
        [:div
         {:id "rightmenubtn"
-         :class "rightmenubtn"
+         :class "menubtn rightmenubtn"
          :style {:transform (str "translate(" @pos-spring "px)")
                  :background (if (= (mod index 2) 0) "#dff6df" "#d5f3d5")}
          :on-click (fn [e]
                      (reset! pos 40)
                      (reset! selected-post nil)
-                     (get-posts-by-tag label)
-                     )}
+                     (get-posts-by-tag label))}
         label]
        [:div {:id "rightmenubottom"
               :style {:height "-1px"}}]])))
@@ -145,12 +144,9 @@
     (let [items @rmenuitems]
       (if items
         [:div
-         {:id "leftmenu"
-          :style{:background "none"
-                 :position "absolute"
-                 :top "200px"
-                 :left "700px"}}
-         [:div {:class "leftmenubody"}
+         {:id "rightmenu"
+          :class "rightmenu"}
+         [:div
           (doall (map (fn [item] ^{:key item} [rightmenubtn item]) (map-indexed vector items)))]]))))
 
 
@@ -164,15 +160,15 @@
         pos-spring (anim/spring pos {:mass 5.0 :stiffness 0.5 :damping 3.0})
         newpos (if (= @selected-item label) 40 30)]
     (fn a-leftmenubtn []
-      [:div {:class "a-leftmenubtn"}
+      [:div
        ;; animation structure
        [anim/timeline
         (* 50 index)
         #(reset! pos newpos)]
        ;; menucard start
        [:div
-        {:id "leftmenubtn"
-         :class "leftmenubtn"
+        {:id "a-leftmenubtn"
+         :class "menubtn leftmenubtn"
          :style {:transform (str "translate(" @pos-spring "px)")
                  :background (if (= (mod index 2) 0) "#dff6df" "#d5f3d5")}
          :on-click (fn [e]
@@ -189,9 +185,7 @@
                        (let [project (nth @blog-posts index)]
                          (reset! blog-project project))))
          }
-        label]
-       [:div {:id "leftmenubottom"
-              :style {:height "-1px"}}]])))
+        label]])))
 
 
 (defn leftmenu
@@ -215,13 +209,9 @@
                (reset! blog-project project)))]
          [:div
           {:id "leftmenu"
-           :style{:background "none"
-                  :position "absolute"
-                  :top "200px"
-                  :left "-180px"}}
-          [:div {:class "leftmenubody"}
+           :class "leftmenu"}
+          [:div
            (doall (map (fn [item] ^{:key item} [leftmenubtn item blog-months blog-posts]) (map-indexed vector items)))]]]
-
         (do
           (cond
             (= @selected-page "blog")
@@ -249,17 +239,13 @@
     ;;(fn []
       [:div
        [:div {:class "comments"}
-        [:div {:style {:padding-right "20px"
-                       :cursor "pointer"}
-               :class "shwocommentbtn"
+        [:div {:style {:padding-right "20px" :cursor "pointer"}
                :on-click (fn []
                            (get-comments (post :id) comments) 
                            (swap! showcomments not))}
          (str (post :comments) " comments")]
         "|"
-        [:div {:style {:padding-left "20px"
-                       :cursor "pointer"}
-               :class "shwocommentbtn"
+        [:div {:style {:padding-left "20px" :cursor "pointer"}
                :on-click (fn []
                            ((fn []
                               (async/go
@@ -270,9 +256,7 @@
                                   (reset! riddle question))))))}
          " Post comment"]
         (if @mode-admin
-          [:div {:style {:padding-left "20px"
-                       :cursor "pointer"}
-                 :class "shwocommentbtn"
+          [:div {:style {:padding-left "20px" :cursor "pointer"}
                  :on-click (fn []
                              (reset! page-state :newpost)
                              (reset! posttoedit post))}
@@ -280,29 +264,43 @@
        
        (if @showeditor
          [:div
-          [:div
-           [:div {:style {:padding-top "20px" :padding-bottom "20px" :width "100%" :text-align "center"}} "Nick"]
+          [:div {:style {:text-align "center"}}
+           
+           [:div {:style {:padding-top "20px"
+                          :padding-bottom "20px"
+                          :width "100%"
+                          }} "Nick"]
+
            [:input {:style {:width "150px"
                             :display "block"
-                            :margin-left "auto"
-                            :margin-right "auto"}
+                            }
                     :on-change #(reset! nick (-> % .-target .-value))}]
-           [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} "Comment"]
-           [:textarea {:style {
-                               :width "100%"
+
+           [:div {:style {:width "100%"
+                          :padding-top "20px"
+                          :padding-bottom "20px"}} "Comment"]
+
+           [:textarea {:style {:width "100%"
                                :height "100px"}
                                :on-change #(reset! text (-> % .-target .-value))}]
-           [:div {:style {:width "100%" :text-align "center" :padding-top "20px" :padding-bottom "20px"}} @riddle]
+
+           [:div {:style {:width "100%"
+                          :padding-top "20px"
+                          :padding-bottom "20px"}} @riddle]
+
            [:input {:style {:width "150px"  
                             :display "block"
-                            :margin-left "auto"
-                            :margin-right "auto"}
+                            }
+                    
                     :on-change #(reset! code (-> % .-target .-value))}]
            [:br]
            [:div {:class "showcommentbtn"
+                  
                   :style {:cursor "pointer"
                           :width "100%"
-                          :text-align "center"}
+                         
+                          }
+
                   :on-click (fn [event]
                               (async/go
                                 (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-addcomment")
@@ -349,11 +347,14 @@
            ;;[:a {:href (str "/post/" (:id @blog-project))}
            (@blog-project :title)]
           [:h2 (clojure.string/join "," (@blog-project :tags))]
+          [:br]
           (m/component (m/md->hiccup (@blog-project :content) (:encode? true)))
           [:br]
           [comments @blog-project comms showcomments showeditor riddle]
           [:br]
-          [:hr]])])))
+          [:hr]
+          [impressum]
+          ])])))
 
 
 (defn content-posts
@@ -372,12 +373,15 @@
                  [:h1
                   [:a {:href (str "/post/" (:id post))} (post :title)]]                 
                  [:h2 (str (clojure.string/replace (post :date) #"T" " ") " / " (clojure.string/join "," (post :tags)))]
+                 [:br]
                  (m/component (m/md->hiccup (post :content)))
                  [:br]
                  [comments post comms showcomments showeditor riddle]
                  [:br]
                  [:hr]]))
-            @blog-posts)])))
+            @blog-posts)
+          [impressum]
+       ])))
 
 
 (defn content-list
@@ -396,7 +400,10 @@
                              
                [:br][:br]])
             @blog-list)
-       [:br]]
+       [:br]
+       [:hr]
+       [impressum]
+       ]
        )))
   
 
@@ -457,7 +464,7 @@
                    }}
           ;; pagecard button
           [:div {:key "cardbutton"
-                 :class "cardbutton"
+                 :class "verticaltext cardbutton"
                  :on-click (fn [e]
                              ;; shift menuitems
                              (reset! menuitems
@@ -494,8 +501,6 @@
             (and active (= label "games")) [content-projects "games"]
             (and active (= label "protos")) [content-projects "protos"])
           ;;impressum
-          (if active
-            [impressum])
           ]]))))
 
 
@@ -582,7 +587,7 @@
         (doall (map (fn [index] ^{:key (str "card" index)} [pagecard index]) (range 4) ))])
 
      [:div {:key "logo"
-            :class "logo"}
+            :class "verticaltext logo"}
       [:div {:class "logobutton"} "milgra.com"]]
      (if @mode-admin
        [:div {:style {:position "absolute"
