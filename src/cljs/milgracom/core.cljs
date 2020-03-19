@@ -345,8 +345,9 @@
              riddle (atom nil)
              comms (atom nil)]
          [:div {:key (rand 1000000)}
-          ;; :dangerouslySetInnerHTML {:__html "<b>FASZT</b>"}}
-          [:h1 (@blog-project :title)]
+          [:h1
+           ;;[:a {:href (str "/post/" (:id @blog-project))}
+           (@blog-project :title)]
           [:h2 (clojure.string/join "," (@blog-project :tags))]
           (m/component (m/md->hiccup (@blog-project :content) (:encode? true)))
           [:br]
@@ -369,11 +370,7 @@
                 [:div {:key (rand 1000000)
                        :style {:z-index "inherit"}}
                  [:h1
-                  ;;{:on-click (fn []
-                  ;;             (. js/history pushState "" "" (str "?post=" (:id post)))
-                  ;;             (get-post (post :id)))}
-                  [:a {:href (str "/post/" (:id post))} (post :title)]]
-                 
+                  [:a {:href (str "/post/" (:id post))} (post :title)]]                 
                  [:h2 (str (clojure.string/replace (post :date) #"T" " ") " / " (clojure.string/join "," (post :tags)))]
                  (m/component (m/md->hiccup (post :content)))
                  [:br]
