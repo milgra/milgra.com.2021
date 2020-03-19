@@ -617,7 +617,6 @@
   (let [path (.getPath (.parse Uri url))
         [_ mainroute subroute ] (clojure.string/split path #"/" )
         ]
-    (println "parse-routes" path)
     (if (= mainroute "admin")
       (reset! mode-admin true))
     (if (= mainroute "post")
@@ -625,12 +624,9 @@
 
 
 (defn start []
-
   (reset! selected-page "blog")
   (parse-routes! (.-location js/window))
-  (reagent/render-component
-   [page]
-   (. js/document (getElementById "app"))))
+  (reagent/render-component [page] (. js/document (getElementById "app"))))
 
 
 (events/listen js/document "click"
