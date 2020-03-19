@@ -7,6 +7,11 @@ body {
     text-shadow: 1px 1px 3px #AAAAAA;   
 }
 
+a {
+    color: #003300;
+    text-decoration: none;
+}
+
 hr {
     border: 0;
     height: 1px;
