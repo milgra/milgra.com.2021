@@ -229,7 +229,7 @@
                :on-click (fn []
                            (get-comments (post :id) comments) 
                            (swap! showcomments not))}
-         (str (post :comments) " comments")]
+         (str (post :comments) "0 comments")]
         "|"
         [:div {:style {:padding-left "20px" :cursor "pointer"}
                :on-click (fn []
@@ -580,10 +580,8 @@
                    (if (= mainroute "post")
                      (do
                        (. e preventDefault)
-                       (get-post subroute)))
-
-                   (when path
-                     (. js/history pushState "" "" (.-href (.-target e)))))))
+                       (. js/history pushState "" "" (.-href (.-target e)))
+                       (get-post subroute))))))
 
 
 (defn ^:export init []
