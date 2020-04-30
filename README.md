@@ -19,7 +19,7 @@ start shadow-cljs repl and server for client side dev :
 todo :
 
 * increase comment counter
-* pagecard state - posts, projects, list
+* implement history back/next
 * blog/apps/protos/games in url
 
 * search field & functionality

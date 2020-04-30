@@ -1,3 +1,4 @@
+shadow-cljs release app
 lein ring uberjar
 
 rsync -v -r -e ssh datomic-pro-0.9.6024 root@116.203.87.141:/root/
