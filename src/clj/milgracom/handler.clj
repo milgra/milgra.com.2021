@@ -250,15 +250,7 @@
 
 (defroutes app-routes
 
-  ; resource related
-
   (GET "/" [] (resp/redirect "/index.html"))
-  (GET "/post/:id" [] (io/resource "public/index.html"))
-  (GET "/projects" [] (io/resource "public/index.html"))
-  (GET "/apps" [] (io/resource "public/index.html"))
-  (GET "/games" [] (io/resource "public/index.html"))
-  (GET "/protos" [] (io/resource "public/index.html"))
-  (GET "/admin" [] (io/resource "public/index.html"))
 
   ; api related
 
@@ -279,7 +271,7 @@
   (GET "/api-removecomment" [pass id] (json/write-str {:result (remove-entity pass id)}))
 
   (route/resources "/")
-  (route/not-found "Not Found"))
+  (route/not-found (io/resource "public/index.html")))
 
 
 (def app
@@ -287,7 +279,7 @@
       (wrap-cors :access-control-allow-origin [#".*" #"http://localhost:8700"]
                  :access-control-allow-methods [:post :get]
                  :access-control-allow-credentials "true"
-                 :Access-Control-Allow-Headers "Content-Type, Accept, Authorization, Authentication, If-Match, If-None-Match, If-Modified-Since, If-Unmodified-Since")
+                 :access-control-allow-headers "Content-Type, Accept, Authorization, Authentication, If-Match, If-None-Match, If-Modified-Since, If-Unmodified-Since")
       (wrap-defaults (assoc-in site-defaults [:security :anti-forgery] false))))
 
 ; init database on start

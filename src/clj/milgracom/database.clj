@@ -12,7 +12,7 @@
     :db/valueType :db.type/keyword
     :db/cardinality :db.cardinality/one
     :db/doc "The type of the post (:blog :game :app :proto)"}
-   
+
    {:db/ident :post/date
     :db/valueType :db.type/instant
     :db/cardinality :db.cardinality/one
@@ -44,12 +44,12 @@
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
     :db/doc "The content of the comment "}
-   
+
    {:db/ident :comment/nick
     :db/valueType :db.type/string
     :db/cardinality :db.cardinality/one
     :db/doc "The nick of the commenter"}
-   
+
    {:db/ident :comment/date
     :db/valueType :db.type/instant
     :db/cardinality :db.cardinality/one
@@ -60,7 +60,7 @@
 
 (def all-posts-q
   '[:find ?e
-   :where [?e :post/type]])
+    :where [?e :post/type]])
 
 
 (def all-posts-all-data-q
@@ -82,7 +82,6 @@
     :where
     [?e :post/type ?ptype]
     [(= ?type ?ptype)]])
-
 
 
 (def all-post-months-by-type-q
@@ -174,18 +173,18 @@ IMHO Emscripten is the best technology of the 2010's so far."}
 
    {:post/title "Termite 3D"
     :post/type :game
-    :post/tags ["action" "strategy" "real-time"] 
+    :post/tags ["action" "strategy" "real-time"]
     :post/date  #inst "2017-07-30T00:00:00"
     :post/comments 0
     :post/content "Egy kurva jo jatek"}
-   
+
    {:post/title "Kinetic 3D"
     :post/type  :prototype
     :post/date  #inst "2017-07-30T00:00:00"
     :post/comments 0
     :post/tags ["3D" "OpenGL"]
     :post/content "Faszasag!!!"}
-   
+
    {:post/title "Mac Media Key Forwarder"
     :post/tags ["Utility"]
     :post/type  :app
