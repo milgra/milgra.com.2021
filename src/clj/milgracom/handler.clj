@@ -13,8 +13,7 @@
 
 
 (defonce uri "datomic:dev://localhost:4334/milgracom")
-(defonce epass "$s0$f0801$ltUrt7mIR8BW90xbCpGe0Q==$sxNuunkgX7GuXuzjAEUXPUqVIq0U00CRUxJFG9MyP30=")
-;(password/encrypt "password")
+(defonce epass "$s0$f0801$ltUrt7mIR8BW90xbCpGe0Q==$sxNuunkgX7GuXuzjAEUXPUqVIq0U00CRUxJFG9MyP30=") ;(password/encrypt "password")
 
 (defonce ip-to-result (atom []))
 (defonce number-names ["zero" "one" "two" "three" "four" "five" "six" "seven" "eight" "nine"])
@@ -41,8 +40,8 @@
   "get all comments"
   []
   (let [db (d/db @conn)
-        posts (d/q db/all-comments-all-data-q db)]
-    posts))
+        comments (d/q db/all-comments-all-data-q db)]
+    comments))
 
 
 (defn setup
@@ -142,7 +141,7 @@
         db (d/db @conn)
         entity (d/entity db dbid)
         post (into {} (seq entity))
-        result (assoc post :post/date (subs (pr-str (post :post/date)) 7 26))]
+        result (assoc post :post/date (subs (pr-str (post :post/date)) 7 26) :db/id dbid)]
     (list result)))
 
 ;(get-post "17592186045508")
@@ -276,7 +275,7 @@
 
 (def app
   (-> app-routes
-      (wrap-cors :access-control-allow-origin [#".*" #"http://localhost:8700"]
+      (wrap-cors :access-control-allow-origin [#"http://localhost:8700"]
                  :access-control-allow-methods [:post :get]
                  :access-control-allow-credentials "true"
                  :access-control-allow-headers "Content-Type, Accept, Authorization, Authentication, If-Match, If-None-Match, If-Modified-Since, If-Unmodified-Since")
