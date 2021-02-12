@@ -7,6 +7,7 @@
     [crypto.password.scrypt :as password]
     [datomic.api :as d]
     [milgracom.database :as db]
+    [ring-debug-logging.core :refer [wrap-with-logger]]
     [ring.middleware.cors :refer [wrap-cors]]
     [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
     [ring.util.response :as resp]))
@@ -177,6 +178,7 @@
 (defn update-post
   "update post in database"
   [pass id title date tags typestr content]
+  (println "UPDATE" pass id title date tags typestr content)
   (if (and (password/check pass epass) (some #(= % typestr) types))
     (let [dbtype (keyword typestr)
           dbid (Long/parseLong id)
@@ -287,8 +289,10 @@
       (wrap-cors :access-control-allow-origin [#".*" #"http://localhost:8700"]
                  :access-control-allow-methods [:post :get]
                  :access-control-allow-credentials "true"
-                 :Access-Control-Allow-Headers "Content-Type, Accept, Authorization, Authentication, If-Match, If-None-Match, If-Modified-Since, If-Unmodified-Since")
-      (wrap-defaults (assoc-in site-defaults [:security :anti-forgery] false))))
+                 :access-control-allow-headers "Content-Type, Accept, Authorization, Authentication, If-Match, If-None-Match, If-Modified-Since, If-Unmodified-Since")
+      (wrap-defaults (assoc-in site-defaults [:security :anti-forgery] false))
+      ;(wrap-with-logger)
+      ))
 
 ; init database on start
 (setup)

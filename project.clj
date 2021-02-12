@@ -10,15 +10,17 @@
                  [compojure "1.6.1"]
                  [com.datomic/datomic-pro "0.9.6024"]
                  [org.clojure/data.json "0.2.6"]
+                 [bananaoomarang/ring-debug-logging "1.1.0"]
                  [ring-cors "0.1.13"]
                  [crypto-password "0.2.1"]
+                 [ring/ring-json "0.5.0"]
                  [ring/ring-defaults "0.3.2"]]
   :plugins [[lein-ring "0.12.5"]]
   :ring {:handler milgracom.handler/app
-         :nrepl {:start? true}}
+         :nrepl {:start? true
+                 :port 3001}}
   :profiles
-  {
-   :dev {:dependencies [[javax.servlet/servlet-api "2.5"]
+  {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                         [ring/ring-mock "0.3.2"]]}
    :uberjar {:dependencies [[javax.servlet/servlet-api "2.5"]
                             [ring/ring-mock "0.3.2"]]
