@@ -1,15 +1,18 @@
 (ns milgracom.core
-  (:require [reagent.core :as reagent :refer [atom]]
-            [reanimated.core :as anim]
-            [markdown-to-hiccup.core :as m]
-            [clojure.string :as str]
-            [clojure.core.async :as async]
-            [cljs.pprint :as print :refer [cl-format]]
-            [cljs-http.client :as http]
-            [goog.events :as events]
-            [goog.history.EventType :as HistoryEventType])            
-  (:import goog.History
-           goog.Uri))
+  (:require
+    [cljs-http.client :as http]
+    [cljs.pprint :as print :refer [cl-format]]
+    [clojure.core.async :as async]
+    [clojure.string :as str]
+    [goog.events :as events]
+    [goog.history.EventType :as HistoryEventType]
+    [markdown-to-hiccup.core :as m]
+    [reagent.core :as reagent :refer [atom]]
+    [reanimated.core :as anim])
+  (:import
+    (goog
+      History
+      Uri)))
 
 
 (defonce server-url (if js/goog.DEBUG "http://localhost:3000" "http://116.203.87.141"))
@@ -34,7 +37,8 @@
 (defonce blog-tag (atom nil))
 
 
-(defn get-posts-by-date [year month type blog-posts]
+(defn get-posts-by-date
+  [year month type blog-posts]
   (async/go
     (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getpostsbydate")
                                                     {:query-params {:year year :month month :type type}}))
@@ -42,7 +46,8 @@
       (reset! blog-posts (reverse posts)))))
 
 
-(defn get-posts-by-tag [tag]
+(defn get-posts-by-tag
+  [tag]
   (reset! blog-tag tag)
   (async/go
     (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getpostsbytag")
@@ -51,7 +56,8 @@
       (reset! blog-list posts))))
 
 
-(defn get-posts [type lmenuitems rmenuitems blog-posts]
+(defn get-posts
+  [type lmenuitems rmenuitems blog-posts]
   (async/go
     (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getposts")
                                                     {:query-params {:type type}}))
@@ -64,7 +70,8 @@
       (reset! rmenuitems tags))))
 
 
-(defn get-post [id]
+(defn get-post
+  [id]
   (async/go
     (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getpost")
                                                     {:query-params {:id id}}))
@@ -73,24 +80,26 @@
       (reset! blog-posts posts))))
 
 
-(defn get-months [type lmenuitems rmenuitems blog-months blog-posts]
+(defn get-months
+  [type lmenuitems rmenuitems blog-months blog-posts]
   (async/go
     (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getmonths")
                                                     {:query-params {:type type}}))
           result (js->clj (.parse js/JSON body) :keywordize-keys true)
           months (result :months)
-          tags (result :tags) 
+          tags (result :tags)
           labels (reduce
-                  (fn [res [year month]] (conj res (str (nth monthnames (dec month)) " " year)))
-                  []
-                  months)
+                   (fn [res [year month]] (conj res (str (nth monthnames (dec month)) " " year)))
+                   []
+                   months)
           [year month] (if (> (count months) 0) (first months))]
       (reset! blog-months months)
       (reset! lmenuitems labels)
       (reset! rmenuitems tags))))
 
 
-(defn get-comments [postid comments]
+(defn get-comments
+  [postid comments]
   (async/go
     (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-getcomments")
                                                     {:query-params {:postid postid}}))
@@ -99,7 +108,8 @@
       (reset! comments ncomments))))
 
 
-(defn delete-comment [id pass]
+(defn delete-comment
+  [id pass]
   (async/go
     (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-removecomment")
                                                     {:query-params {:id id :pass pass}}))
@@ -114,7 +124,8 @@
         pos (reagent/atom (/ (.-innerWidth js/window) 2))
         pos-spring (anim/spring pos {:mass 5.0 :stiffness 0.5 :damping 3.0})
         newpos (if (= @selected-item label) 40 30)]
-    (fn a-leftmenubtn []
+    (fn a-leftmenubtn
+      []
       [:div
        [anim/timeline
         (* 40 index)
@@ -135,7 +146,8 @@
 
 (defn rightmenu
   []
-  (fn a-leftmenu []
+  (fn a-leftmenu
+    []
     (let [items @rmenuitems]
       (if items
         [:div
@@ -152,7 +164,8 @@
         pos (reagent/atom (/ (.-innerWidth js/window) -2))
         pos-spring (anim/spring pos {:mass 5.0 :stiffness 0.5 :damping 3.0})
         newpos (if (= @selected-item label) 40 30)]
-    (fn a-leftmenubtn []
+    (fn a-leftmenubtn
+      []
       [:div
        [anim/timeline
         (* 50 index)
@@ -180,13 +193,14 @@
 
 (defn leftmenu
   []
-  (fn a-leftmenu []
+  (fn a-leftmenu
+    []
     (let [items @lmenuitems
           [year month] (first @blog-months)]
       (if items
         [:div
          [anim/timeline
-         (+ 260 (* 50 (count @lmenuitems)))
+          (+ 260 (* 50 (count @lmenuitems)))
           #(cond
              (not= @selected-post nil)
              (get-post @selected-post)
@@ -214,76 +228,79 @@
             (get-posts "proto" lmenuitems rmenuitems blog-posts))
           nil)))))
 
-(defn impressum []
+
+(defn impressum
+  []
   [:div {:class "impressum"}
    "www.milgra.com by Milan Toth | Powered by Clojure and Datomic."])
 
 
-(defn comments [post comments showcomments showeditor riddle]
+(defn comments
+  [post comments showcomments showeditor riddle]
   (let [nick (clojure.core/atom nil)
         text (clojure.core/atom nil)
         code (clojure.core/atom nil)]
-      [:div
-       [:div {:class "comments"}
-        [:div {:style {:padding-right "20px" :cursor "pointer"}
-               :on-click (fn []
-                           (get-comments (post :id) comments) 
-                           (swap! showcomments not))}
-         (str (post :comments) "0 comments")]
-        "|"
+    [:div
+     [:div {:class "comments"}
+      [:div {:style {:padding-right "20px" :cursor "pointer"}
+             :on-click (fn []
+                         (get-comments (post :id) comments)
+                         (swap! showcomments not))}
+       (str (post :comments) "0 comments")]
+      "|"
+      [:div {:style {:padding-left "20px" :cursor "pointer"}
+             :on-click (fn []
+                         ((fn []
+                            (async/go
+                              (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-genriddle")))
+                                    result (js->clj (.parse js/JSON body) :keywordize-keys true)
+                                    question (result :question)]
+                                (swap! showeditor not)
+                                (reset! riddle question))))))}
+       " Post comment"]
+      (if @mode-admin
         [:div {:style {:padding-left "20px" :cursor "pointer"}
                :on-click (fn []
-                           ((fn []
-                              (async/go
-                                (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-genriddle")))
-                                      result (js->clj (.parse js/JSON body) :keywordize-keys true)
-                                      question (result :question)]
-                                  (swap! showeditor not)
-                                  (reset! riddle question))))))}
-         " Post comment"]
-        (if @mode-admin
-          [:div {:style {:padding-left "20px" :cursor "pointer"}
-                 :on-click (fn []
-                             (reset! page-state :newpost)
-                             (reset! posttoedit post))}
-           "[Edit post]"])]
+                           (reset! page-state :newpost)
+                           (reset! posttoedit post))}
+         "[Edit post]"])]
 
-       (if @showeditor
-         [:div {:style {:text-align "center"}}
-          [:br]
-          [:div {:style {:width "100%" }} "Nick"]
-          [:input {:style {:width "150px"}
-                   :on-change #(reset! nick (-> % .-target .-value))}]
-          [:div "Comment"]
-          [:textarea {:style {:width "100%" :height "100px"}
-                      :on-change #(reset! text (-> % .-target .-value))}]
-          [:div @riddle]
-          [:input {:style {:width "150px"}
-                   :on-change #(reset! code (-> % .-target .-value))}]
-          [:br]
-          [:div {:class "showcommentbtn"
-                 :style {:cursor "pointer"}
-                 :on-click (fn [event]
-                             (async/go
-                               (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-addcomment")
-                                                                               {:query-params {:postid (post :id) :nick @nick :text @text :code @code}}))
-                                     result (js->clj (.parse js/JSON body) :keywordize-keys true)
-                                     status (result :result)]
-                                 (if (= status "Invalid code")
-                                   (reset! riddle "Invalid result, please try again later")
-                                   (do
-                                     (get-comments (post :id) comments)
-                                     (reset! showcomments true)
-                                     (swap! showeditor not))))))}
-           "Send Comment"]])
-       (if (and @showcomments @comments)
-         (map (fn [comment]
-                [:div {:key (rand 1000000)}
-                 [:h3
-                  (comment :nick)
-                  "|"
-                  (clojure.string/replace (comment :date) #"T" " ")]
-                 [:div (comment :content)]
+     (if @showeditor
+       [:div {:style {:text-align "center"}}
+        [:br]
+        [:div {:style {:width "100%"}} "Nick"]
+        [:input {:style {:width "150px"}
+                 :on-change #(reset! nick (-> % .-target .-value))}]
+        [:div "Comment"]
+        [:textarea {:style {:width "100%" :height "100px"}
+                    :on-change #(reset! text (-> % .-target .-value))}]
+        [:div @riddle]
+        [:input {:style {:width "150px"}
+                 :on-change #(reset! code (-> % .-target .-value))}]
+        [:br]
+        [:div {:class "showcommentbtn"
+               :style {:cursor "pointer"}
+               :on-click (fn [event]
+                           (async/go
+                             (let [{:keys [status body]} (async/<! (http/get (str server-url "/api-addcomment")
+                                                                             {:query-params {:postid (post :id) :nick @nick :text @text :code @code}}))
+                                   result (js->clj (.parse js/JSON body) :keywordize-keys true)
+                                   status (result :result)]
+                               (if (= status "Invalid code")
+                                 (reset! riddle "Invalid result, please try again later")
+                                 (do
+                                   (get-comments (post :id) comments)
+                                   (reset! showcomments true)
+                                   (swap! showeditor not))))))}
+         "Send Comment"]])
+     (if (and @showcomments @comments)
+       (map (fn [comment]
+              [:div {:key (rand 1000000)}
+               [:h3
+                (comment :nick)
+                "|"
+                (clojure.string/replace (comment :date) #"T" " ")]
+               [:div (comment :content)]
                  (if @mode-admin
                    [:div {:style {:cursor "pointer"}
                           :class "showcommentbtn"
@@ -364,7 +381,7 @@
        [impressum]
        ]
        )))
-  
+
 
 (defonce menuitems (atom [{:color "#dff6df"
                            :posatom (reagent/atom 0)
@@ -387,8 +404,10 @@
                            :label "blog"
                            :index (clojure.core/atom 8000)}]))
 
+
 (defonce fixposes [ 0 50 100 150 ])
 (defonce fixsizes [ 50 50 50 750 ])
+
 
 (defn pagecard
   "returns a pagecard component with the proper contents for given label"
@@ -554,6 +573,7 @@
                     (clojure.string/split #"\&"))]
     (into {} (for [[k v] (map #(clojure.string/split % #"=") param-strs)]
                [(keyword k) v]))))
+
 
 (defn parse-routes!
   [url]
