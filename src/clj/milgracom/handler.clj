@@ -134,7 +134,9 @@
         posts (d/q db/posts-for-tag-q db tag)]
     (reverse (sort-by :post/date (map #(assoc % :post/date (subs (pr-str (% :post/date)) 7 26)) (map first posts))))))
 
-;(get-posts-for-tag "Music")
+
+;(get-posts-for-tag "a")
+
 
 (defn get-post
   [id]
@@ -165,7 +167,7 @@
     (let [dbtype (keyword typestr)
           data [{:post/title title
                  :post/type dbtype
-                 :post/tags tags
+                 :post/tags (clojure.string/split tags #",")
                  :post/date (clojure.instant/read-instant-date date)
                  :post/content content}]
           db (d/db @conn)
@@ -177,14 +179,13 @@
 (defn update-post
   "update post in database"
   [pass id title date tags typestr content]
-  (println "UPDATE" pass id title date tags typestr content)
   (if (and (password/check pass epass) (some #(= % typestr) types))
     (let [dbtype (keyword typestr)
           dbid (Long/parseLong id)
           data [{:db/id dbid
                  :post/title title
                  :post/type dbtype
-                 :post/tags tags
+                 :post/tags (clojure.string/split tags #",")
                  :post/date (clojure.instant/read-instant-date date)
                  :post/content content}]
           db (d/db @conn)
@@ -266,7 +267,7 @@
 
   ; admin related
 
-  (POST "/api-addpost" [pass title date tags type content] (json/write-str {:result (add-post pass title date tags type  content)}))
+  (POST "/api-addpost" [pass title date tags type content] (json/write-str {:result (add-post pass title date tags type content)}))
   (POST "/api-updatepost" [pass id title date tags type content] (json/write-str {:result (update-post pass id title date tags type content)}))
   (GET "/api-removepost" [pass id] (json/write-str {:result (remove-entity pass id)}))
   (GET "/api-removecomment" [pass id] (json/write-str {:result (remove-entity pass id)}))
