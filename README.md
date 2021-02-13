@@ -4,20 +4,23 @@ This is a project that I used to learn full stack web development in clojure and
 
 [Check it out](http://milgra.com)
 
-client side code : ```src/cljs```
-
-server side code : ```src/clj```
-
 start server :
 
-```lein ring server-headless```
+```
+cd server
+lein ring server-headless
+```
 
-start shadow-cljs repl and server for client side dev :
+start client :
 
-```shadow watch app```
+```
+cd client
+shadow watch app
+```
 
 todo :
 
+* post-bound comments in central db
 * increase comment counter
 * implement history back/next
 * blog/apps/protos/games in url
