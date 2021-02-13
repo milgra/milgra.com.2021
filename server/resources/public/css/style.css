@@ -168,6 +168,11 @@ textarea, input {
     text-align : center;
 }
 
+.adminpanel {
+    position : absolute;
+    right : -110px;
+}
+
 .adminbutton {
     cursor : pointer;
     padding : 10px;

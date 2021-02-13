@@ -1,10 +1,10 @@
-(defproject milgra.com.server "0.6.0"
+(defproject milgra.com.server "0.8.0"
   :description "milgra.com homepgae"
   :url "http://example.com/FIXME"
   :min-lein-version "2.0.0"
   :repositories {"my.datomic.com" {:url "https://my.datomic.com/repo"
                                    :creds :gpg}}
-  :source-paths ["src/clj"]
+  :source-paths ["src"]
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/tools.nrepl "0.2.13"]
                  [compojure "1.6.1"]

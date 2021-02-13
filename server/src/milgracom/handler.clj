@@ -278,7 +278,7 @@
 
 (def app
   (-> app-routes
-      (wrap-cors :access-control-allow-origin [#"http://localhost:8700"]
+      (wrap-cors :access-control-allow-origin [#"http://milgra.com" #"http://localhost:8700"]
                  :access-control-allow-methods [:post :get]
                  :access-control-allow-credentials "true"
                  :access-control-allow-headers "Content-Type, Accept, Authorization, Authentication, If-Match, If-None-Match, If-Modified-Since, If-Unmodified-Since")
